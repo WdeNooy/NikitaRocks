@@ -1,0 +1,215 @@
+---
+title: "Notes"
+author: "Wouter"
+date: "3/22/2021"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Workshop Aims
+
+Enhance understanding of:
+
+1. Social contagion (influence) and relational events (social selection) as predicting attributes of persons or ties between persons (and between persons and other objects).
+2. Behavioural network hypotheses as (predictive) effects of local configurations of ties and (node) attributes.
+3. Assumptions about where (between whom) and when events may happen.
+
+Offer R code examples and hands-on practice with:
+
+1. Regression models: linear and logistic.
+2. Multilevel (regression) models for repeated measurements and cross-nested designs.
+3. Event history models: discrete-time and continuous-time (semi-parametric).
+
+## Data
+
+One or more simulated data sets, e.g., of fictional groups of children, that highlight the models that are presented.
+
+Data is organized according to time-constant/time-varying and attribute/dyadic (max 4 data frames per data set).
+
+## Activities and Learning Materials
+
+Short plenary introduction to a topic using slides followed by individual/group work (if online: in breakout rooms) using (a section in) a `learnr::` interactive tutorial with possibility to ask for assistance by the lecturer and/or course organizer(s).
+
+Each tutorial section starts with basic/essential models and skills and offers optional more advanced models for those who have time left or for further study after the workshop.
+
+## Schedule
+
+### Morning I, Part I - Contagion with linear regression
+
+Teaser: Propp's morphology of the Russian folktale (hero, villain, witch, helper) as culture in social networks. 
+
+Introduction to:
+
+1. Regression models as statistical models for behavioural hypotheses. Our interest in network behaviour (e.g., group behaviour): How do persons' change their states (e.g., attitudes, behaviour, infections - contagion) and their actions towards other persons (or objects - Relational events)? Brainstorm about what we could predict from what (for which units of analysis)?
+
+2. Events that are ordered in time as basic data that we try to predict (and explain). Timing distinction between predictor and outcome (in contrast to ERGM).
+
+3. Exposure as predictor (and how to calculate that), requiring relation (dyadic data).
+
+Data:
+
+1. DV: voice loudness (during class breaks).
+
+2. Dyadic: playmates (aggregated to best friends, subsequently as measured playing together?).
+
+3. IV: voice loudness (of playmates) at a preceding time.
+
+4. Controls: sex, time since last playmate talking (main effect: quicker response increases loudness, possibly interaction effect), ...
+
+Hands-on:
+
+1. Checking correct installation of R, RStudio, `learnr::`, `gradethis::` (?), and `NikitaRocks::` (the tutorial and all of its dependencies).
+
+2. Regression model with prepared exposure variable (loudness of last playmate talking), options for control variables (to stress importance of model specification): Inspecting output: interpreting regression coefficients (and residuals?).
+
+3. Play with shiny app (TBD?) to inspect ego networks of pupils with small and large residuals. With option to show attributes?
+
+4. Manipulation of the exposure variable and time (using stable friendship relations): only voice loudness of last friend, average voice loudness of all friends in a fixed preceding time window, time-weighted (half-life time).
+
+5. Advanced: Calculation of the exposure variable and time (using stable friendship relations): only voice loudness of last friend, average voice loudness of all friends in a fixed preceding time window, time-weighted (half-life time).
+
+6. Advanced: Using data on playing together to calculate exposure. 
+
+### Morning I, Part II - Contagion with repeated measurements (multilevel - go Bayesian?)
+
+Introduction to:
+
+1. Problem of repeated measurements (of DV): dependencies among observations.
+
+2. Multilevel model with varying intercepts as solution to repeated measurements model: personal inclination to be loud.
+
+3. Added benefit of correcting for effects of unobserved personal characteristics (model specification).
+
+4. Going Bayesian (with `rstan::`): Easier to fit complicated models (due to weakly informative priors), more intuitive interpretation of results (credible/posterior intervals), (easier model checks with predictive checks?) but more computer time.
+
+Data: Same as Morning I, Part I.
+
+Hands-on:
+
+1. Specify a multilevel model with (`nlme::` or) `rstan::` and interpret varying intercepts.
+
+2. ?? Predictive checks at pupil level? Inspect residuals/predictions as evolving network?
+
+3. Predicting varying intercepts from time-constant personal attributes (and see that it hardly changes the exposure effects).
+
+4. Advanced: Varying slopes for the exposure effect (model with exposure as score of last preceding playmate) as measure of influence/influentials in a cross-nested model. 
+
+### Afternoon I, Part I - Contagion with logistic regression (multilevel, Bayesian)
+
+Introduction to:
+
+1. Logistic regression: meaning of regression coefficients in terms of probability changes.
+
+2. Using (a little bit of) ego network structure for predicting contagion: complex contagion, closure.
+
+Data:
+
+1. DV: (day of) installing new game app.
+
+2. Dyadic: Friendship and/or watching a peer use the game app (possibly with duration).
+
+3. IV: number of friends who installed the new game app.
+
+4. Controls: ...
+
+Hands-on:
+
+1. Multilevel regression model with prepared exposure variable (number of friends who installed the new game app): Inspecting output: interpreting fixed and varying regression coefficients (and residuals?).
+
+2. Play with shiny app (TBD?) to inspect ego networks of pupils with small and large residuals. With option to show attributes?
+
+3. Complex contagion as exposure to more than one adopter: dichotomize number of friends who installed the app and compare results.
+
+4. Advanced: Calculate closure (number of connected friends who have installed the app) and estimate its effect (while controlling for number of friends?).
+
+### Afternoon I, Part II - Contagion with time (discrete time event history)
+
+Introduction to:
+
+1. Risk set and (right-) censoring.
+
+2. Time-varying predictors (and covariates).
+
+3. Discrete-time approach: creating relevant cases.
+
+Data: Same as  Afternoon I, Part I.
+
+Hands-on:
+
+1. Inspect (check) cases created and (time-varying) predictor.
+
+2. Estimate multilevel model and interpret results (particularly the time effect?).
+
+3. ?? Inspect predictions/residuals in ego-networks (shiny app)?
+
+4. Advanced: Creation of cases and calculation of time-varying predictor.
+
+5. Advanced: @@ (same as earlier this day or continue working on earlier topics?)
+
+### Morning II, Part I - Relational events with logistic regression: Creating and using predictors
+
+Introduction to:
+
+Data:
+
+1. DV: 
+
+2. Dyadic: 
+
+3. IV: 
+
+4. Controls:
+
+Hands-on:
+
+### Morning II, Part II - Relational events with regression
+
+Introduction to:
+
+Data:
+
+1. DV: 
+
+2. Dyadic: 
+
+3. IV: 
+
+4. Controls:
+
+Hands-on:
+
+### Afternoon II, Part I - Relational events with event history (continuous time Cox?)
+
+Introduction to:
+
+Data:
+
+1. DV: 
+
+2. Dyadic: 
+
+3. IV: 
+
+4. Controls:
+
+Hands-on:
+
+### Afternoon II, Part II - Wrapping it all up
+
+Introduction to:
+
+1. Teaser solution: Propp's morphology of the Russian folktale (hero, villain, witch, helper) as culture in social networks. The time-ordered ego-network structures required to test he roles (without application).
+
+2. @@
+
+Data: None.
+
+Hands-on: None.
+
+
+
