@@ -5,6 +5,7 @@ date: "3/22/2021"
 output: 
   html_document: 
     toc: yes
+    toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -17,7 +18,7 @@ Enhance understanding of:
 
 1. Social contagion (influence) and relational events (social selection) as predicting attributes of persons or ties between persons (and between persons and other objects).
 2. Behavioural network hypotheses as (predictive) effects of local configurations of ties and (node) attributes.
-3. Assumptions about where (between whom) and when events may happen.
+3. Assumptions about where (for or between whom) and when events may happen.
 
 Offer R code examples and hands-on practice with:
 
@@ -33,19 +34,27 @@ Data is organized according to time-constant/time-varying and attribute/dyadic (
 
 ## Activities and Learning Materials
 
-Short plenary introduction to a topic using slides followed by individual/group work (if online: in breakout rooms) using (a section in) a `learnr::` interactive tutorial with possibility to ask for assistance by the lecturer and/or course organizer(s).
+Short plenary introduction to a topic using introductory materials in the tutorials) followed by individual/group work (if online: only in breakout rooms if individual problems have to be dealt with) using (a section in) a `learnr::` interactive tutorial.
 
-Each tutorial section starts with basic/essential models and skills and offers optional more advanced models for those who have time left or for further study after the workshop.
+Each tutorial (section) starts with basic/essential models and skills and offers optional more advanced models for those who have time left or for further study after the workshop. The general idea is that the tutorials offer materials and guidance that can be used individually afterwards.
+
+## Title
+
+Analysis of time-stamped network data.
+
+Modelling events within social networks. (covers both social contagion and relational events)
 
 ## Schedule
 
-### Morning I, Part I - Contagion with linear regression
+Each course block lasts for 1.5 hours.
 
-Teaser: Propp's morphology of the Russian folktale (hero, villain, witch, helper) as culture in social networks. 
+### Morning I, Part I - Contagion with linear regression
 
 Introduction to:
 
-1. Regression models as statistical models for behavioural hypotheses. Our interest in network behaviour (e.g., group behaviour): How do persons' change their states (e.g., attitudes, behaviour, infections - contagion) and their actions towards other persons (or objects - Relational events)? Brainstorm about what we could predict from what (for which units of analysis)?
+0. Show animation of example network to illustrate time-stamped network data: changing ties, changing (personal) attributes. Brainstorm about what we could predict from what (involving which units of analysis)?
+
+1. Regression models as statistical models for behavioural hypotheses. Our interest in network behaviour (e.g., group behaviour): How do persons change their states (e.g., attitudes, behaviour, infections - contagion) and their actions towards other persons (or objects - relational events)?
 
 2. Events that are ordered in time as basic data that we try to predict (and explain). Timing distinction between predictor and outcome (in contrast to ERGM).
 
@@ -53,19 +62,19 @@ Introduction to:
 
 Data:
 
-1. DV: voice loudness (during class breaks).
+1. DV: voice loudness (during class breaks; event 'unit' is voice use for speech and expression, repeated measurements within one class break).
 
 2. Dyadic: playmates (aggregated to best friends, subsequently as measured playing together?).
 
 3. IV: voice loudness (of playmates) at a preceding time.
 
-4. Controls: sex, time since last playmate talking (main effect: quicker response increases loudness, possibly interaction effect), ...
+4. Controls: sex (boys louder), pupil-specific loudness level, max loudness in group, time since last playmate talking (main effect: quicker response increases loudness, possibly interaction effect), ...
 
 Hands-on:
 
 1. Checking correct installation of R, RStudio, `learnr::`, `gradethis::` (?), and `NikitaRocks::` (the tutorial and all of its dependencies).
 
-2. Regression model with prepared exposure variable (loudness of last playmate talking), options for control variables (to stress importance of model specification): Inspecting output: interpreting regression coefficients (and residuals?).
+2. Regression model with prepared exposure variable (loudness of last playmate talking), options for control variables (to stress importance of model specification): interaction exposure by sex (girls are more affected by their peers' loudness). Inspecting output: interpreting regression coefficients (ignore checks?).
 
 3. Play with shiny app (TBD?) to inspect ego networks of pupils with small and large residuals. With option to show attributes?
 
@@ -119,7 +128,7 @@ Data:
 
 Hands-on:
 
-1. Multilevel regression model with prepared exposure variable (number of friends who installed the new game app): Inspecting output: interpreting fixed and varying regression coefficients (and residuals?).
+1. Multilevel regression model with prepared exposure variable (number of friends who installed the new game app): Inspecting output: interpreting fixed and varying regression coefficients (and residuals?). Demonstration with new game app adoption, additional practice with adoption of expression "wicked smaht" (every break a new episode?)
 
 2. Play with shiny app (TBD?) to inspect ego networks of pupils with small and large residuals. With option to show attributes?
 
@@ -137,7 +146,7 @@ Introduction to:
 
 3. Discrete-time approach: creating relevant cases.
 
-Data: Same as  Afternoon I, Part I.
+Data: Same as Afternoon I, Part I.
 
 Hands-on:
 
@@ -151,13 +160,59 @@ Hands-on:
 
 5. Advanced: @@ (same as earlier this day or continue working on earlier topics?)
 
-### Morning II, Part I - Relational events with logistic regression: Creating and using predictors
+### Morning II, Part I - Relational events: Predicting event (tie) value
 
 Introduction to:
 
+1. Dyad/arc/ordered pair as unit of analysis in (logistic) regression. Hypothesize behaviour of sender towards recipient (of the relational event/action) __given that sender acts towards recipient__. 
+
+2. Predictors from node attributes. Action valence (content) may depend on characteristics of the sender (not _activity_?), the recipient (_popularity_), and on the (dis)similarity of sender and recipient (_homophily_/_heterophily_).
+
+3. Predictors from local network structure: durable relations or previous relational events, e.g., balance.
+
+4. Varying intercepts for sender and recipient to capture effects of unobserved personal tendencies and 'popularity'.
+
 Data:
 
-1. DV: 
+1. DV: Positive versus negative action (support versus attack; praise versus bullying; in a setting of pairs of children that are assigned to work/play together?).
+
+2. Dyadic IVs: 
+
+3. Sender and/or receiver attribute IVs: 
+
+4. Controls:
+
+Hands-on:
+
+1. Creating predictors. Understanding predictor creation and the choices involved by manually calculating some simple examples.
+
+2. Using predictors, interpreting results.
+
+@. Advanced: Specify cross-nested multilevel model and interpret 
+
+### Morning II, Part II - Relational events: Predicting sender and (or) recipient
+
+Introduction to:
+
+1. Who will select whom next (given that there is a next relational event)? Combination of two processes: (a) who is going to act when? and (b) the action is directed towards whom? Possibly, a third process: (c) what is the nature of the action? 
+
+2. With the types of predictors discussed in the previous session: @@.
+
+3. Granularity of time: discrete versus continuous. Continuous-time event history model. Simplest (not so realistic) model: fixed probability of event occurrence over time (exponential).
+
+4. Undirected example, e.g., playing together without one pupil taking the initiative. Processes: (a) @@@ . `goldfish::` can handle this.
+
+5. Two-mode application, for example, choice or opinions on topics combined with relations between actors. `goldfish::` can handle 2-mode data.
+
+6. Other special cases: incomplete risk sets. The sender or the recipient is fixed (exogeneous), e.g., a child is asked to choose a team. Risk set as eligible senders and/or recipients. We ask: Given that there is an action by sender (or towards recipient), why was this recipient/sender chosen?. Construction of cases.
+
+7. Wrapping it up: Regression models for time-stamped network data require dealing with time (when does something happen?) and pairs (between whm does it happen?). What do you consider to be externally fixed, what do you want to predict: whether/when/how a person's charasteristic changes or whether/when/how/by whom/to whom an (inter)action appears?
+
+8. `RSiena::` for panel wave data (only mention and give references).
+
+Data:
+
+1. DV: dichotomy for `goldfish::`, actually, presence versus absence of ties (estimating the probability or odds of tie as an event appearance). The fact that a pupil says something to another pupil.
 
 2. Dyadic: 
 
@@ -167,49 +222,10 @@ Data:
 
 Hands-on:
 
-### Morning II, Part II - Relational events with regression
+1. Estimate a dynamic network model with `goldfish::` package (https://sn.ethz.ch/research/goldfish.html); this package includes estimation of REMs (so `relevents::` not necessary) ; see https://github.com/snlab-ch/goldfish for potential installation problems on mac OSX)
 
-Introduction to:
+2. Interpret the results. Recognize the local network structures represented by the effects.
 
-Data:
-
-1. DV: 
-
-2. Dyadic: 
-
-3. IV: 
-
-4. Controls:
-
-Hands-on:
-
-### Afternoon II, Part I - Relational events with event history (continuous time Cox?)
-
-Introduction to:
-
-Data:
-
-1. DV: 
-
-2. Dyadic: 
-
-3. IV: 
-
-4. Controls:
-
-Hands-on:
-
-### Afternoon II, Part II - Wrapping it all up
-
-Introduction to:
-
-1. Teaser solution: Propp's morphology of the Russian folktale (hero, villain, witch, helper) as culture in social networks. The time-ordered ego-network structures required to test he roles (without application).
-
-2. @@
-
-Data: None.
-
-Hands-on: None.
 
 
 
