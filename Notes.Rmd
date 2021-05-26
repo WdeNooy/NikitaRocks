@@ -2,8 +2,10 @@
 title: "Notes"
 author: "Wouter"
 date: "3/22/2021"
-output: 
-  html_document: 
+output:
+  word_document:
+    toc: yes
+  html_document:
     toc: yes
     toc_float: yes
 ---
@@ -38,21 +40,52 @@ Short plenary introduction to a topic using introductory materials in the tutori
 
 Each tutorial (section) starts with basic/essential models and skills and offers optional more advanced models for those who have time left or for further study after the workshop. The general idea is that the tutorials offer materials and guidance that can be used individually afterwards.
 
-## Title
+## Title & Description
 
-Analysis of time-stamped network data.
+Modelling events within social networks
 
-Modelling events within social networks. (covers both social contagion and relational events)
+This course deals with events happening within social networks. The events can be either changes in a person's characteristics under the influence of the social network or changes in the social network itself because a person starts or stops relations.
+
+Network effects on a person's characteristics are generally known as _social contagion_ or _social influence_. The spread of epidemics due to contacts with people who are contaminated (unfortunately, a very topical phenomenon) and the diffusion of innovations are classic examples. Exposure to contaminated people or innovation adopters may make us sick or adopt. Our network contacts, however, may also change our opinions, ways of expressing ourselves, cultural choices, and so on. 
+
+If we assume that people initiate and end relationships, social network structure is the result of the choices that people make. These network choices are called _relational events_. This also applies to short-term interactions, such as saying something to someone else. We start and end relations partly because of our own characteristics or those of our contacts, but also because of our current network structure. For example, we may choose our friend's friend to be our friend too. This is also known as _social selection_.
+
+Acquiring a disease or adopting an innovation is an event taking place at a particular point in time. Starting or ending a relationship and human interactions also take place in time. This course presents methods for analyzing events within social networks for which we know (with more or less precision) when they happen. In other words, this course deals with longitudinal network data.
+
+The models presented in this course are dynamic. Our network contacts may change our characteristics and our subsequent behaviour towards network contacts, which changes the network. As a result, our network contacts subsequently respond to a new network context, changing themselves and the network again. In essence, we are modelling individual and network change.
+
+Our example dataset consists of interactions among a set of children during a series of school breaks. Can we predict who plays with whom? Who says something to whom and how loud or nice (versus not so nice) the utterance is? Can we predict when a child starts using a new game app? The data are fake but created to highlight the different aspects of social contagion and social selection.
+
+We can do this with the general statistical workhorse of the social sciences: regression analysis. The course starts with a basic regression model that tries to predict how loud children are during breaks. Do children adapt their voice volume to those of their playmates? This contagion model is step-by-step expanded to include time. The second part of the course deals with social selection, that is, network change. We first predict the content of interactions: Is a pupil saying something  nice or not so nice to another pupil? Finally, we try to predict who plays with whom and who says something to whom: the lines in our network of children. All analyses are done in R.
+
+The course takes into account that some participants may already be proficient in several types of regression analysis whereas other participants have hardly any experience. The course's primary goal is to teach the different types of questions that can be answered with data on events in social networks and how to use regression results to answer these questions. As a secondary goal, the course offers hands-on practice with analysis, data preparation, and visualization. Not all participants are expected to complete all exercises during the course. The course materials will remain available to participants after the course, so participants can use the materials when they want to apply the models to their own data afterwards.
+
+Preparation for the course: 
+
+- Install the latest version of R and RStudio on your computer (check out the references below for guidance). 
+- Refresh your knowledge of regression analysis and of R. Reading tips: Read more about installing and using R and RStudio in the (web) books [Modern Dive](https://moderndive.com/1-getting-started.html) and [Getting used to R, RStudio, and R Markdown](https://moderndive.com/1-getting-started.html). If you are an SPSS user, you may want to read the first three sections of [Help, My Collaborator Uses R! An Introduction to Reproducible Statistical Analyses in R](https://wdenooy.github.io/Switch2R/).
+
+Enhance understanding of:
+
+1. Social contagion (influence) and relational events (social selection) as predicting attributes of persons or ties between persons (and between persons and other objects).
+2. Behavioural network hypotheses as (predictive) effects of local configurations of ties and (node) attributes.
+3. Assumptions about where (for or between whom) and when events may happen.
+
+Offer R code examples and hands-on practice with:
+
+1. Regression models: linear and logistic.
+2. Multilevel (regression) models for repeated measurements and cross-nested designs.
+3. Event history models: discrete-time and continuous-time (semi-parametric).
 
 ## Schedule
 
 Each course block lasts for 1.5 hours.
 
-### Morning I, Part I - Contagion with linear regression
+### Morning I, Part I - Peer influence with linear regression
 
 Introduction to:
 
-0. Show animation of example network to illustrate time-stamped network data: changing ties, changing (personal) attributes. Brainstorm about what we could predict from what (involving which units of analysis)?
+0. Show animation of example network to illustrate time-stamped network data: changing ties, changing (personal) attributes. Brainstorm about what we could predict from what (involving which units of analysis)? Actor-oriented models: social networks both influence and result from (individual) behaviour.
 
 1. Regression models as statistical models for behavioural hypotheses. Our interest in network behaviour (e.g., group behaviour): How do persons change their states (e.g., attitudes, behaviour, infections - contagion) and their actions towards other persons (or objects - relational events)?
 
@@ -66,7 +99,7 @@ Data:
 
 2. Dyadic: playmates (aggregated to best friends, subsequently as measured playing together?).
 
-3. IV: voice loudness (of playmates) at a preceding time.
+3. IV: (first:) voice loudness by sex and by adhd; (second or afternoon:) voice loudness (of playmates) at a preceding time.
 
 4. Controls: sex (boys louder), pupil-specific loudness level, max loudness in group, time since last playmate talking (main effect: quicker response increases loudness, possibly interaction effect), ...
 
@@ -84,7 +117,7 @@ Hands-on:
 
 6. Advanced: Using data on playing together to calculate exposure. 
 
-### Morning I, Part II - Contagion with repeated measurements (multilevel - go Bayesian?)
+### Morning I, Part II - Susceptibility to peer influence (multilevel regression)
 
 Introduction to:
 
@@ -94,7 +127,7 @@ Introduction to:
 
 3. Added benefit of correcting for effects of unobserved personal characteristics (model specification).
 
-4. Going Bayesian (with `rstan::`): Easier to fit complicated models (due to weakly informative priors), more intuitive interpretation of results (credible/posterior intervals), (easier model checks with predictive checks?) but more computer time.
+4. Varying slopes as susceptibility to peer influence.
 
 Data: Same as Morning I, Part I.
 
@@ -106,9 +139,7 @@ Hands-on:
 
 3. Predicting varying intercepts from time-constant personal attributes (and see that it hardly changes the exposure effects).
 
-4. Advanced: Varying slopes for the exposure effect (model with exposure as score of last preceding playmate) as measure of influence/influentials in a cross-nested model. 
-
-### Afternoon I, Part I - Contagion with logistic regression (multilevel, Bayesian)
+### Afternoon I, Part I - Contagion with logistic regression
 
 Introduction to:
 
@@ -116,9 +147,11 @@ Introduction to:
 
 2. Using (a little bit of) ego network structure for predicting contagion: complex contagion, closure.
 
+3. Going Bayesian (with `rstan::`): Easier to fit complicated models (due to weakly informative priors), more intuitive interpretation of results (credible/posterior intervals), (easier model checks with predictive checks?) but more computer time.
+
 Data:
 
-1. DV: (day of) installing new game app.
+1. DV: (day/break of) installing new game app.
 
 2. Dyadic: Friendship and/or watching a peer use the game app (possibly with duration).
 
@@ -128,7 +161,7 @@ Data:
 
 Hands-on:
 
-1. Multilevel regression model with prepared exposure variable (number of friends who installed the new game app): Inspecting output: interpreting fixed and varying regression coefficients (and residuals?). Demonstration with new game app adoption, additional practice with adoption of expression "wicked smaht" (every break a new episode?)
+1. (Single level) regression model with prepared exposure variable (minutes played with someone using the gameapp in the preceding break. Inspecting output: interpreting regression coefficients (and residuals?). Demonstration with new game app adoption, additional practice with adoption of expression "wicked smaht" (every break a new episode?) ; Note: assumes constant hazard function, see Afternoon I, Part II.
 
 2. Play with shiny app (TBD?) to inspect ego networks of pupils with small and large residuals. With option to show attributes?
 
@@ -136,7 +169,7 @@ Hands-on:
 
 4. Advanced: Calculate closure (number of connected friends who have installed the app) and estimate its effect (while controlling for number of friends?).
 
-### Afternoon I, Part II - Contagion with time (discrete time event history)
+### Afternoon I, Part II - Diffusion (discrete time event history)
 
 Introduction to:
 
@@ -144,7 +177,9 @@ Introduction to:
 
 2. Time-varying predictors (and covariates).
 
-3. Discrete-time approach: creating relevant cases.
+3. The hazard function: the effect of time (representing chance of hearing about the app outside the network and individual adoption process, e.g., convincing your parents) and the shape of this effect.
+
+4. Discrete-time approach: creating relevant cases.
 
 Data: Same as Afternoon I, Part I.
 
@@ -152,7 +187,7 @@ Hands-on:
 
 1. Inspect (check) cases created and (time-varying) predictor.
 
-2. Estimate multilevel model and interpret results (particularly the time effect?).
+2. Estimate (single level) logistic model and interpret results (particularly the time effect?).
 
 3. ?? Inspect predictions/residuals in ego-networks (shiny app)?
 
@@ -160,15 +195,15 @@ Hands-on:
 
 5. Advanced: @@ (same as earlier this day or continue working on earlier topics?)
 
-### Morning II, Part I - Relational events: Predicting event (tie) value
+### Morning II, Part I - Network change: Predicting tie value
 
 Introduction to:
 
 1. Dyad/arc/ordered pair as unit of analysis in (logistic) regression. Hypothesize behaviour of sender towards recipient (of the relational event/action) __given that sender acts towards recipient__. 
 
-2. Predictors from node attributes. Action valence (content) may depend on characteristics of the sender (not _activity_?), the recipient (_popularity_), and on the (dis)similarity of sender and recipient (_homophily_/_heterophily_).
+2. Predictors from node attributes. Action valence (content) may depend on characteristics of the sender (not _activity_?), the recipient (_popularity_), and on the (dis)similarity of sender and recipient (_homophily_/_heterophily_) or (other) social ties/exchanges between them.
 
-3. Predictors from local network structure: durable relations or previous relational events, e.g., balance.
+3. Predictors from local network structure: durable relations or previous relational events, e.g., balance (as special version of reciprocity and transitivity).
 
 4. Varying intercepts for sender and recipient to capture effects of unobserved personal tendencies and 'popularity'.
 
@@ -190,7 +225,7 @@ Hands-on:
 
 @. Advanced: Specify cross-nested multilevel model and interpret 
 
-### Morning II, Part II - Relational events: Predicting sender and (or) recipient
+### Morning II, Part II - Network change: Predicting sender and/or recipient
 
 Introduction to:
 
