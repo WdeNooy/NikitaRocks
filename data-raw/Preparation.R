@@ -128,7 +128,7 @@ for (t in 1:nrow(timepoints)) {
     #set variable dyntie for friendships and change negative into character variable
     mutate(
       dyntie = ifelse(is.na(dyntie), "Friendship", dyntie),
-      Valence = ifelse(negative == 1, "red", "darkgreen")
+      Valence = ifelse(negative == 1, "neg", "pos") #for plotting within Shiny, use colornames such as red and darkgreen
       ) %>%
     #select relevant variables
     select(from, to, dyntie, Valence)
@@ -144,7 +144,6 @@ for (t in 1:nrow(timepoints)) {
     as.matrix()
 
   # create plot
-  #visual_break1[[t]] <-
   ggraph(temp_layout) +
     geom_edge_link(
       aes(filter = (dyntie == "Friendship")),
@@ -199,7 +198,7 @@ for (t in 1:nrow(timepoints)) {
     scale_fill_brewer(name = "Ethnicity", type = "div", palette = 1) +
     guides(fill = guide_legend(override.aes=list(shape=21))) + #bug fix
     scale_alpha(range = c(0.4, 0.8)) + #relative loudness, not absolute due to automatic rescaling
-    scale_colour_manual(values = c(neg = "red", pos = "green")) +
+    scale_edge_color_manual(values = c(neg = brewercolors[["Red"]], pos = brewercolors[["Green"]])) +
     theme_void()
 
   #save plot to png file for quick rendering
