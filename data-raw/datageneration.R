@@ -5,6 +5,7 @@ library(randomNames)
 library(igraph)
 library(knitr)
 library(ndtv)
+library(lme4)
 library(goldfish)
 
 # Constants ####
@@ -114,14 +115,6 @@ pairs_const <- pupils %>%
   select(from = ID.x, to = ID.y, friend:simil_adhd)
 # cleanup
 rm(friends, l)
-
-# # Generate breaks ####
-# # 5 days (numbered) with two breaks each (morning and afternoon).
-# breaks <- data_frame(
-#   breakID = 1:10,
-#   day = c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
-#   period = rep(c(0, 1), 5) # 0 = morning break, 1 = afternoon break
-# )
 
 # Generate 'empty' dynamic dyadic data : ####
 #   number of days since last played together at start of
@@ -1112,7 +1105,7 @@ summary(lm(loudness ~ fromadhd + fromsex + grouploudness, data = speech_dyn))
 # with individual level loudness level
 summary(lm(loudness ~ fromadhd + fromsex + fromloudnesslevel + grouploudness, data = speech_dyn))
 # without individual loudness level but with random intercepts for pupils
-library(lme4)
+#library(lme4)
 model_loudness_ml <- lmer(
   loudness ~ fromadhd + reciploudness*fromsex + grouploudness + (1 | from),
   data = speech_dyn
@@ -1747,8 +1740,70 @@ pairs_dyn_diffusion <- pairs_dyn
 #save workspace
 save.image("playmates_diffusion.RData")
 
+# load("playmates_diffusion.RData")
 
+# Definitive data tables ####
 
+# Ensure that a pupl's utterance does not overlap with the next
+# which is possible because of the random end time of utterances.
+pairs_dyn <- pairs_dyn %>%
+  #arrange by sender (from), breakID, onset, and playmate
+  arrange(from, breakID, playmate, onset) %>%
+  #group by from and playmate to get lagged values only per from-playmate combination
+  group_by(from, breakID, playmate) %>%
+  #add onset of next action (playmate or utterance)
+  mutate(onset_next = lead(onset, n = 1L)) %>%
+  #change terminus to 0.01 minute before next onset, only for utterances
+  mutate(terminus = ifelse(!is.na(loudness) & onset_next < terminus, onset_next - 0.01, terminus)) %>%
+  #delete onset_next
+  select(-onset_next) %>%
+  ungroup()
+# Move loudness of utterances to pupils_dyn.
+# Note: utterances with targets in pairs_dyn can be matched to loudness in
+# pupils_dyn via onset and terminus (start and end times). A pupil can only
+# start and end one utterance at a time.
+pupils_dyn <- pairs_dyn %>%
+  #keep cases with loudness values (these are not playmate ties)
+  filter(!is.na(loudness)) %>%
+  #ensure that no loudness value is below 0.05
+  mutate(loudness = ifelse(loudness < 0.05, loudness - min(loudness) + 0.05, loudness)) %>%
+  #select loudness (and other variables required for pupils_dyn)
+  select(ID = from, breakID, onset, onset.censored, terminus, terminus.censored, loudness) %>%
+  #add cases to pupils_dyn
+  bind_rows(pupils_dyn) %>%
+  ungroup()
+# Move lastplayed variable for cases at time 0 from pairs_dyn to pairs_const.
+# 'lastplayed' infor as if provided in survey at start of observation period
+pairs_const <- pairs_dyn %>%
+  #select rows with lastplayed info at time zero
+  filter(onset == 0 & !is.na(lastplayed)) %>%
+  #select relevant variables
+  select(from, to, lastplayed) %>%
+  #add lastplayed info to pairs_const
+  full_join(pairs_const, by = c("from", "to")) %>%
+  ungroup()
+# Remove utterances without target and lastplayed info (at time 0) from pairs_dyn.
+# Keep playmate (undirected, containing both (x,y) and (y,x)) and utterance
+# (directed) ties in one table (for easy multiplex graph drawing) but change
+# playmate variable into a type variable (1 = playmate, 2 = utterance).
+pairs_dyn <- pairs_dyn %>%
+  #keep playmate ties and utterances with a target
+  filter(!is.na(to) & (!is.na(playmate) | !is.na(loudness))) %>%
+  #replace playmate variable by dyntie (dynamic tie type)
+  mutate(dyntie = ifelse(!is.na(playmate), "Playmate", "Utterance")) %>%
+  #retain base variables
+  select(from:onset, onset.censored, terminus, terminus.censored, dyntie, negative) %>%
+  ungroup()
+#rename pupils to pupils_const
+pupils_const <- pupils %>%
+  ungroup()
+#the four data files combined
+save(pupils_const, pupils_dyn, pairs_const, pairs_dyn, file = "data-raw/basicdata.RData")
+#each data file separately (for use in tutorials)
+save(pupils_const, file = "data/pupils_const.RData")
+save(pupils_dyn, file = "data/pupils_dyn.RData")
+save(pairs_const, file = "data/pairs_const.RData")
+save(pairs_dyn, file = "data/pairs_dyn.RData")
 
 # PROBLEM: `ndtv::` (and `networkDynamic::`) ####
 # seems not to be able to handle

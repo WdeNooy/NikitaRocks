@@ -1,0 +1,387 @@
+---
+title: "Session 1. Peer influence with linear regression"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+runtime: shiny_prerendered
+description: >
+  Regression basics, exposure, and our first analyses of pupil loudness.
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(tidyverse)
+library(knitr)
+library(RColorBrewer) #for colour palettes
+library(shiny)
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Standard colors to use
+brewercolors <- brewer.pal( 5, name =  "Spectral")
+brewercolors[3] <- "#ffff00"
+names(brewercolors) <- c("Red", "Orange", "Yellow", "Green", "Blue")
+#usage: colour = brewercolors["Blue"]
+
+#load basic data
+pupils_const <- NikitaRocks::pupils_const
+pupils_dyn <- NikitaRocks::pupils_dyn
+pairs_const <- NikitaRocks::pairs_const
+pairs_dyn <- NikitaRocks::pairs_dyn
+
+#create data files for analyses, so they are available in this tutorial.
+#analyses of loudness at the pupil level (Break 1)
+loudness_average <- pupils_dyn %>%
+  #select loudness cases in Break 1
+  filter(breakID == 1 & !is.na(loudness)) %>%
+  #calculate average loudness level
+  group_by(ID) %>%
+  summarise(avg_loudness = mean(loudness, na.rm = T), .groups = 'drop') %>%
+  #add fixed pupil characteristics
+  full_join(pupils_const) %>%
+  #keep relevant variables
+  select(ID:label, sex:adhd)
+
+```
+
+<!-- Define programming tip style -->
+<style>
+.tip {
+  background-color: #f5f5f5;
+}
+</style>
+
+<!-- Define question style -->
+<style>
+.question {
+  color: #5A9DDB;
+}
+</style>
+
+
+## What do pupils do during a break?
+
+We have (fictional) data on what 26 pupils are doing during a 30 minutes break.
+
+The below network picture shows part of this information:
+
+1. Pupil's sex and ethnicity: node shape and color.
+2. Friendships: fat gray lines.
+3. Playing together: thin black lines.
+4. Voice use: the blue circles, the louder, the darker (less transparent).
+5. Saying something to someone else: blue (positive statement) and (negative statement) red arrows.
+
+```{r}
+# first part of the app: the User Interface (ui)
+fluidPage(
+  verticalLayout(
+    imageOutput("image"), #plotOutput("netplot"),
+    wellPanel(
+      sliderInput("slider", label = NULL, min = 1, max = 531,
+                  value = 1, step = 1, ticks = FALSE, 
+                  animate = animationOptions(interval = 300)
+                  )
+    )
+  )
+)
+```
+
+```{r, context="server"}
+# second part of the app: the R code
+# show prepared image
+  output$image <- renderImage({
+# # create a plot named netplot to be shown in the output
+#   output$netplot <- renderPlot({
+#     plot(visual_break1[[input$slider]])
+    filename <- normalizePath(file.path('./images',
+                              paste('breakdyn', input$slider, '.png', sep='')))
+    return(list(src = filename,
+         contentType = "image/png",
+         width = 600, #seems to be standard image width in embedded shiny
+         height = 400
+         # alt = "This is alternate text"
+         ))
+
+  }, deleteFile = FALSE)
+```
+
+What we want to know:
+
+* How do they act?
+* When do they act?
+* Towards whom do they act?
+
+Eyeballing the evolving network does not give us easy answers to these questions. There is just too much information. Let us use statistical analysis to answer these questions. 
+
+## Regression essentials
+
+If we apply statistical analysis, we basically believe:
+
+* that we can measure characteristics (<i style="color:#5A9DDB;">variables</i>) of different objects (<i style="color:#5A9DDB;">cases</i>, <i style="color:#5A9DDB;">units</i>);
+* that we can compare these measurements;
+* that systematic differences between measurements are meaningful.
+
+For example, we believe that we can measure and compare voice loudness, pupil's sex, and pupil's ADHD score.
+
+```{r regresAggregated, out.width='50%', fig.show='hold', fig.asp=1}
+# Two scatterplots predicting average loudness from sex and ADHD score.
+# calculate predictions (means) for boys and girls
+predictor_sex <- loudness_average %>%
+  group_by(sex) %>%
+  summarise(sex_avg = round(mean(avg_loudness), digits = 3)) %>%
+  pull(sex_avg)
+ggplot(loudness_average, 
+       aes(x = sex, y = avg_loudness)
+       ) +
+  geom_jitter(
+    aes(color = adhd, shape = as.factor(sex)),
+    width = 0.05,
+    height = 0,
+    size = 3,
+    show.legend = FALSE
+    ) +
+  geom_hline(aes(yintercept = predictor_sex[1]),
+             linetype = "dashed" ) +
+  geom_hline(aes(yintercept = predictor_sex[2])) +
+  geom_smooth(method = "lm", se = FALSE, color = brewercolors["Blue"]) +
+  geom_segment(
+    x = 1, xend = 1, y = predictor_sex[1],
+    yend = predictor_sex[2],
+    arrow = arrow(length = unit(0.1, "inches"), type = "open"),
+    color = brewercolors["Red"],
+    size = 2
+  ) +
+  geom_text(
+    x = 1, y = predictor_sex[2] - 0.05,
+    label = paste0("mean difference =\n effect of sex (b)\n", predictor_sex[2] , "- ",
+                    predictor_sex[1], " = ", predictor_sex[2] - predictor_sex[1]),
+    color = brewercolors["Red"],
+    vjust = 1,
+    hjust = 1,
+    size = 6
+  ) +
+  geom_text(aes(
+    label = label
+    ),
+    check_overlap = TRUE,
+    hjust = ifelse(loudness_average$sex == 0, 0, 1),
+    nudge_x = ifelse(loudness_average$sex == 0, 0.1, -0.1),
+    colour = "darkgrey"
+  ) +
+  scale_x_continuous(
+    name = "Pupil's sex",
+    breaks = c(0, 1),
+    labels = c("Boys", "Girls")
+  ) +
+  scale_y_continuous(
+    name = "Average loudness of a pupil",
+    breaks = c(round(predictor_sex[2], digits = 3), 
+               round(predictor_sex[1], digits = 3))
+  ) +
+  scale_shape_manual(values = c(15, 16)) +
+  theme_classic(base_size = 22)
+
+# scatterplot for effect of adhd on loudness
+# calculate predicted loudness values for adhd scores 2 and 3
+predictor_adhd <- round(predict(lm(avg_loudness ~ adhd, data = loudness_average), newdata = data.frame(adhd = c(2, 3))), digits = 3)
+#create plot
+ggplot(loudness_average, 
+       aes(x = adhd, y = avg_loudness)
+       ) +
+  geom_point(
+    aes(shape = as.factor(sex)),
+    show.legend = FALSE,
+    alpha = 0.4,
+    size = 3
+    ) +
+  geom_hline(aes(yintercept = predictor_adhd[1]),
+             linetype = "dashed" ) +
+  geom_hline(aes(yintercept = predictor_adhd[2])) +
+  geom_segment(
+    x = 3, xend = 3, y = predictor_adhd[1],
+    yend = predictor_adhd[2],
+    arrow = arrow(length = unit(0.1, "inches"), type = "open"),
+    color = brewercolors["Red"],
+    size = 2
+  ) +
+  geom_segment(
+    x = 2, xend = 3, y = predictor_adhd[1],
+    yend = predictor_adhd[1],
+    arrow = arrow(length = unit(0.1, "inches"), type = "open"),
+    color = "black",
+    size = 2
+  ) +
+  geom_text(
+    x = 3, y = predictor_adhd[2] - 0.05,
+    label = paste0("change for +1 ADHD =\n effect of ADHD (b)\n", predictor_adhd[2] , "- ",
+                    predictor_adhd[1], " = ", predictor_adhd[2] - predictor_adhd[1]),
+    color = brewercolors["Red"],
+    vjust = 1,
+    hjust = 0.5,
+    size = 6
+  ) +
+  geom_smooth(method = "lm", se = FALSE, color = brewercolors["Blue"]) +
+  scale_x_continuous(
+    name = "A pupil's ADHD score",
+    breaks = 0:6
+  ) +
+  scale_y_continuous(
+    name = "",
+    breaks = predictor_adhd,
+    labels = round(predictor_adhd, digits = 3)
+  ) +
+  scale_shape_manual(values = c(15, 16)) +
+  theme_classic(base_size = 22)
+```
+
+Each of the above plots compares pupil's average voice loudness to a background characteristic of the pupil: pupil's sex (left) and ADHD score (right).
+
+If we want to predict average voice loudness, we call this the <i style="color:#5A9DDB;">dependent</i> or <i style="color:#5A9DDB;">outcome</i> variable. Variables that we use to predict (sex, ADHD score) are called <i style="color:#5A9DDB;">independent</i> or <i style="color:#5A9DDB;">predictor</i> variables.
+
+Sex is measured with two categories: 
+
+* boys (coded `0`) with average loudness score `r predictor_sex[1]` (on a loudness scale from 0 to 1);
+* girls (coded `1`), average loudness score is `r predictor_sex[2]`. 
+
+If we look for systematic differences, we compare the mean (average) scores between boys and girls. 
+
+We call the difference between the two means (`r predictor_sex[2] - predictor_sex[1]`) the <i style="color:#5A9DDB;">effect</i> of sex on loudness. Girls are slightly less loud than boys during this break.
+
+ADHD score is measured on a scale from 0 to 7. 
+
+For systematic differences in loudness, we look at the consequences of a one unit change in ADHD: 
+
+* at ADHD score 2, the predicted voice loudness (blue line) is `r predictor_adhd[1]`;
+* at ADHD score 3, the predicted voice loudness (blue line) is `r predictor_adhd[2]`.
+
+A one unit increase in ADHD scores predicts that voice loudness increases by `r predictor_adhd[2] - predictor_adhd[1]`.
+
+Is this a lot? 
+
+* The maximum adhd difference is around 6: if we compare a pupil with ADHD score 6 to another pupil who scores 0;
+* maximum difference in predicted voice loudness is around 6 times `r predictor_adhd[2] - predictor_adhd[1]` = `r 6 * (predictor_adhd[2] - predictor_adhd[1])`;
+* this is about one quarter of the loudness scale (from 0 to 1);
+* is this a lot?
+
+The straight blue lines in the plots are called <i style="color:#5A9DDB;">regression lines</i>.
+
+How do we get a regression line?
+
+```{r}
+#cleanup predicted values
+rm(predictor_sex)
+rm(predictor_adhd)
+```
+
+## Ordinary regression in R
+
+If the variable that we want to predict is numerical (real numbers, not a set of category codes), we can use the `lm()` function to estimate a regression line (regression model).
+
+```{r regression, exercise = TRUE}
+# Estimate a regression model with lm() and save the results in my_first_model.
+# Use the data set loudness_average, which contains variables:
+# - ID: pupil's ID (sequential) number,
+# - label: pupil's  name,
+# - avg_loudness: pupil's average voice loudness during the break,
+# - sex: pupil's sex
+# - ethnicity: : pupil's ethnicity,
+# - adhd: pupil's ADHD score.
+# R is case-sensitive!
+
+# Estimate the regression model.
+my_first_model <- lm(avg_loudness ~ adhd, data = loudness_average)
+# Show the results with the summary() function.
+summary(my_first_model)
+
+```
+
+Wow, those are a lot of numbers!
+
+* Look at the table of coefficients,
+* spot the row with `adhd`,
+* look at the number under `Estimate` in this row (<i style="color:#5A9DDB;">the unstandardized regression coefficient</i>, _b_);
+* this is the effect of ADHD on voice loudness.
+* Didn't we see this number before?
+* What was the meaning of this number?
+
+<div class="question">
+Excercises
+
+1. Change the code to estimate the effect of sex on voice loudness. Interpret the coefficient of sex.
+2. Change the code to estimate the effect of both sex and ADHD score on voice loudness. Tip: Literally add a second predictor using the `+` sign.
+</div>
+
+## Statistical significance
+
+```{r}
+summary(lm(avg_loudness ~ sex + adhd, data = loudness_average))
+```
+
+In the summary of a regression model, you encounter the column `Pr(>|t|)`:
+
+* which gives the so-called <i style="color:#5A9DDB;">p value</i> of a statistical test on the estimated effect;
+* if this value is below .05, the test is statistically significant,
+* as indicated by the stars.
+
+Statistical significance is the most popular and probably worst understood concept in statistics.
+
+* A <i style="color:#5A9DDB;">significant</i> effect does NOT mean that there is a substantive or substantially interesting effect.
+* An <i style="color:#5A9DDB;">insignificant</i> effect does NOT mean that there is no effect.
+
+## Confidence intervals
+
+For understanding the significance test, we can look at the <i style="color:#5A9DDB;">confidence interval</i> of an effect. 
+
+```{r confint, exercise = TRUE}
+# Again, estimate a regression model with lm() and save the results in my_first_model.
+my_third_model <- lm(avg_loudness ~ sex + adhd, data = loudness_average)
+# Use function confint() to get the confidence intervals of the effects.
+confint(my_third_model, level = 0.95)
+```
+
+* We usually look at the 95% confidence interval;
+* `confint()` gives us the lower limit (column `2.5 %`) and upper limit (column `97.5 %`) of the interval
+* that contains 'plausible values' for the effect
+* in the population
+* from which our data were randomly sampled.
+
+The plausible values for the effect of sex on voice loudness:
+
+* range from `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[2,1], digits = 2)` to `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[2,2], digits = 2)`;
+* so the effect can be negative and positive;
+* girls can score on average lower (negative effect) or higher (positive effect) than boys;
+* this effect was not statistically significant.
+
+The plausible values for the effect of ADHD score on voice loudness:
+
+* range from `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[3,1], digits = 3)` to `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[3,2], digits = 3)`;
+* so we are confident that the effect is positive;
+* higher ADHD score predicts louder voices, not voices that are less loud;
+* this effect was statistically significant.
+
+<div class="tip">
+So, the meaning of statistical significance:
+
+* if an effect is statistically significant, we are confident that we know the direction (sign) of the effect: Predicted values either increase or decrease for higher predictor levels;
+* if an effect is NOT statistically significant, we are NOT confident that we know the direction (sign) of the effect.
+</div>
+
+## Exposure to loud peers
+
+A pupil can be loud at some moments and not so loud on other moments during a break. So let us not analyze average loudness of a pupil over the entire break. Instead, let us analyze each time pupils raise their voices.
+
+
+Let us have a look at the network at time 2:14 in the break. Truyen is clearly louder than, for example, Dakota or Hailey. Why would that be? Can we predict (or explain) this?
+
+```{r}
+#show network snapshot at timepoint 30.
+include_graphics(normalizePath(file.path('./images', 'breakdyn30.png')))
+```
+
+Truyen is playing with Shrika and Desiree, both of whom are also talking. Shrika is talking with Hunter in a friendly tone (mutual blue arrows), whereas Truyen seems to be having an argument with Desiree (mutual red arrows).
+
+
+
+## Context: overall loudness
+
