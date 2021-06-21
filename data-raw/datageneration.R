@@ -1549,8 +1549,11 @@ for (j in 2:n_breaks) {
     mutate(
       terminus.censored = ifelse(is.na(terminus), TRUE, FALSE),
       terminus = ifelse(is.na(terminus), i/n_pupils, terminus)
+    ) %>%
+    # set gameapp NA to 0
+    mutate(
+      gameapp = ifelse(is.na(gameapp), 0, gameapp)
     )
-
 }
 
 #cleanup
@@ -1744,7 +1747,7 @@ save.image("playmates_diffusion.RData")
 
 # Definitive data tables ####
 
-# Ensure that a pupl's utterance does not overlap with the next
+# Ensure that a pupil's utterance does not overlap with the next
 # which is possible because of the random end time of utterances.
 pairs_dyn <- pairs_dyn %>%
   #arrange by sender (from), breakID, onset, and playmate
@@ -1804,6 +1807,180 @@ save(pupils_const, file = "data/pupils_const.RData")
 save(pupils_dyn, file = "data/pupils_dyn.RData")
 save(pairs_const, file = "data/pairs_const.RData")
 save(pairs_dyn, file = "data/pairs_dyn.RData")
+
+# Derived data sets for analysis ####
+
+## Data Session 1 ####
+
+#analyses of loudness at the pupil level (Break 1)
+loudness_average <- pupils_dyn %>%
+  #select loudness cases in Break 1
+  filter(breakID == 1 & !is.na(loudness)) %>%
+  #calculate average loudness level
+  group_by(ID) %>%
+  summarise(avg_loudness = mean(loudness, na.rm = T), .groups = 'drop') %>%
+  #add fixed pupil characteristics
+  full_join(pupils_const, by="ID") %>%
+  #keep relevant variables
+  select(ID:label, sex:adhd)
+#save to package data directory
+save(loudness_average, file = "data/loudness_average.RData")
+
+# data preparation for analyzing loudness at the event level with several
+# exposure variables.
+# first create a helper data frame only containing utterances in Break 1
+utterances <- pupils_dyn %>%
+  #select utterances in Break 1
+  filter(
+    breakID == 1 & #only events in Break 1
+      !is.na(loudness)
+  ) %>%
+  #drop the superfluous variables
+  select(-onset.censored, -terminus.censored, -gameapp, -breakID)
+# next, create a helper data frame containing playmates and utterance addressees in Break 1
+playmates_help <- pairs_dyn %>%
+  #keep relations in Break 1 and only playmates
+  filter(breakID == 1 & dyntie == "Playmate") %>%
+  #remove superfluous variables
+  select(-breakID, -onset.censored, -terminus.censored, -negative)
+addressing_help <- pairs_dyn %>%
+  #keep relations in Break 1 and utterances
+  filter(breakID == 1 & dyntie == "Utterance") %>%
+  #remove superfluous variables
+  select(-breakID, -onset.censored, -terminus.censored, -dyntie)
+# then, create a helper data frame with all last utterances of peers for all
+# utterances to be predicted
+cases_help <- utterances %>%
+  #link every utterance to all utterances
+  #BEWARE: can create a very large intermediary data frame
+  full_join(utterances, by = character()) %>%
+  #select only joined (second) utterances that happened in the minute
+  # preceding the utterance to be predicted (first utterance)
+  # because our longest window is 1 minute
+  filter(
+    onset.y < onset.x & #the second utterance must have started before the first..
+      onset.y >= onset.x - 1 & #..but not longer ago than 1 minute (onset is measured in minutes)
+      ID.x != ID.y #don't use utterances by the pupil of the utterance to be predicted
+  ) %>%
+  #add valence of incoming relations between pupil (ID.x) and peer (ID.y)
+  # note that the pairs is reversed:
+  # - an utterance from peer to pupil is linked to the (pupil,peer) pair,
+  # - so we have incoming utterances linked to the pupil
+  # - variable negative (!is.na) identifies incoming utterances among all utterances of peers
+  left_join(
+    addressing_help,
+    by = c("ID.x" = "to", "ID.y" = "from", "onset.y" = "onset", "terminus.y" = "terminus")
+  ) %>%
+  #add playmate relations (ignore timing)
+  left_join(
+    playmates_help,
+    by = c("ID.x" = "from", "ID.y" = "to")
+  ) %>%
+  #add indicator whether or notpupil and peer are current playmates
+  mutate(
+    playmate = case_when(
+      is.na(onset) ~ 0, #no playmate info, so no playmates
+      onset < onset.x & terminus >= onset.x ~ 1, #playing/conversation has started before the utterance to be predicted and pupil and peer are still playmates
+      TRUE ~ 0 #no playmates
+    )
+  ) %>%
+  # select the temporally last utterance of each peer for each utterance of the pupil we want to predict
+  # and whether or not any of the utterances was incoming
+  # (every ID-onset combination of the first set of utterances)
+  group_by(ID.x, onset.x, terminus.x, loudness.x, ID.y) %>%
+  summarise(
+    terminus.y = last(terminus.y, order_by = onset.y),
+    loudness.y = last(loudness.y, order_by = onset.y),
+    negative = last(negative, order_by = onset.y), #was peer's last utterance incoming?
+    any_incoming = sum(!is.na(negative)) > 0, #was any of peer's utterances incoming?
+    playmate = max(playmate), #1 = curent playmates, 0 = currently not playmates
+    onset.y = last(onset.y, order_by = onset.y),
+    .groups = "drop"
+  )
+# finally, calculate exposure scores for each event with different windows, aggregations, and selections
+# a case is a ID-onset combination
+# Window: all voices in the last minute.
+# 4. expo_minute_max_playmate: The loudest voice of playmates' last utterances in the preceding minute.
+# 5. expo_minute_max_conversation: The loudest voice of conversation partners' last utterances in the preceding minute.
+# 6. expo_minute_max_other: The loudest voice of all other pupils' last utterances in the preceding minute.
+loudness_events <- cases_help %>%
+  #helper variables: peer loudness for conversation partners, playmates, and others (first two categories may overlap)
+  mutate(
+    loudness_playmate = ifelse(playmate == 1, loudness.y, NA),
+    loudness_conversation = ifelse(!is.na(negative), loudness.y, NA),
+    loudness_other = ifelse(is.na(negative) & playmate == 0, loudness.y, NA)
+  ) %>%
+  #create cases and exposure variables
+  group_by(ID.x, onset.x, terminus.x, loudness.x) %>%
+  summarise(
+    expo_minute_max_playmate = max(loudness_playmate, na.rm = TRUE),
+    expo_minute_max_conversation = max(loudness_conversation, na.rm = TRUE),
+    expo_minute_max_other = max(loudness_other, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  #replace -Inf by NA
+  mutate(
+    expo_minute_max_playmate = ifelse(
+      is.infinite(expo_minute_max_playmate),
+      NA, expo_minute_max_playmate),
+    expo_minute_max_conversation = ifelse(
+      is.infinite(expo_minute_max_conversation),
+      NA, expo_minute_max_conversation),
+    expo_minute_max_other = ifelse(
+      is.infinite(expo_minute_max_other),
+      NA, expo_minute_max_other)
+  ) %>%
+  #replace NA by variable mean
+  mutate(
+    expo_minute_max_playmate = ifelse(
+      is.na(expo_minute_max_playmate),
+      mean(expo_minute_max_playmate, na.rm = TRUE),
+      expo_minute_max_playmate),
+    expo_minute_max_conversation = ifelse(
+      is.na(expo_minute_max_conversation),
+      mean(expo_minute_max_conversation, na.rm = TRUE),
+      expo_minute_max_conversation),
+    expo_minute_max_other = ifelse(
+      is.na(expo_minute_max_other),
+      mean(expo_minute_max_other, na.rm = TRUE),
+      expo_minute_max_other)
+  )
+# Window: only current voices.
+# 1. expo_last_max: The loudest voice at the moment a pupil starts an utterance.
+# 2. expo_last_mean: The average sound level at the moment a pupil starts an utterance.
+# 3. expo_last_min: The softest voice at the moment a pupil starts an utterance.
+loudness_events <- cases_help %>%
+  #keep only utterances that have not terminated yet
+  filter(
+    terminus.y >= onset.x
+  ) %>%
+  #create cases and exposure variables
+  group_by(ID.x, onset.x, terminus.x, loudness.x) %>%
+  summarise(
+    expo_last_max = max(loudness.y, na.rm = TRUE),
+    expo_last_mean = mean(loudness.y, na.rm = TRUE),
+    expo_last_min = min(loudness.y, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  #join to events with first set of exposure variables
+  full_join(loudness_events, by = c("ID.x", "onset.x", "terminus.x", "loudness.x")) %>%
+  #add time-constant pupil attributes
+  left_join(pupils_const, by = c("ID.x" = "ID"))  %>%
+  #select and rename variables
+  select(
+    ID = ID.x,
+    onset = onset.x,
+    terminus = terminus.x,
+    loudness = loudness.x,
+    expo_last_max:label,
+    sex:adhd
+  )
+# cleanup helper data
+rm(utterances, addressing_help, playmates_help, cases_help)
+#save to package data directory
+save(loudness_events, file = "data/loudness_events.RData")
+
+
 
 # PROBLEM: `ndtv::` (and `networkDynamic::`) ####
 # seems not to be able to handle
