@@ -1,0 +1,359 @@
+---
+title: "Session 2. Susceptibility to peer influence"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+runtime: shiny_prerendered
+description: >
+  Correcting for and exploiting repeated measurements of voice loudness.
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(tidyverse)
+library(knitr)
+library(RColorBrewer) #for colour palettes
+library(lme4) #multilevel models
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Standard colors to use
+brewercolors <- brewer.pal( 5, name =  "Spectral")
+brewercolors[3] <- "#ffff00"
+names(brewercolors) <- c("Red", "Orange", "Yellow", "Green", "Blue")
+#usage: colour = brewercolors["Blue"]
+
+#load basic data
+pupils_const <- NikitaRocks::pupils_const
+pupils_dyn <- NikitaRocks::pupils_dyn
+pairs_const <- NikitaRocks::pairs_const
+pairs_dyn <- NikitaRocks::pairs_dyn
+
+#load prepared analysis data set
+loudness_average <- NikitaRocks::loudness_average
+loudness_events <- NikitaRocks::loudness_events
+```
+
+<!-- Define programming tip style -->
+<style>
+.tip {
+  background-color: #f5f5f5;
+}
+</style>
+
+<!-- Define question style -->
+<style>
+.question {
+  color: #5A9DDB;
+}
+</style>
+
+## Multilevel data
+
+In Session 1, we have predicted voice loudness of pupils from the loudness of preceding utterances of other pupils. 
+
+Our reasoning: If we can predict voice loudness from the loudness of preceding utterances, pupils seem to react to the loudness of others. Loudness, then, is a group or network process; it seems to be governed by peer influence.
+
+We have, however, committed a statistical sin: We pretended that different voice events for the same pupil are comparable to voice events of different pupils.
+
+This is a statistical sin because different voice events for the same pupil are clustered data, not independent data. Utterances from the same pupil tend to have a similar loudness level. If we know the loudness of one utterance, we can better predict the loudness of other utterances by this pupil. 
+
+We have to take these dependencies into account. To this end, we use <i class="question">multilevel regression models</i>. We have pupils as one level and utterances as another level. A pupil may make several utterances, so we say that utterances are nested within pupils.
+
+```{r multilevelplot, fig.asp=0.2}
+tibble(
+  label = c("Level 2: pupils", "", "", "Hunter", "", "", "", "", "Jessica", "", "[...]", "Level 1: utterances", "1", "2", "3", "4", "[...]", "1", "2", "3", "4", "[...]"),
+  x = rep(c(2, 4:13), 2),
+  y = c(rep(2, 11), rep(1, 11))
+  ) %>%
+  ggplot() +
+    geom_text(aes(x = x, y = y, label = label), colour = brewercolors["Blue"]) +
+    geom_segment(x = 6, xend = 4, y = 1.9, yend = 1.1) +
+    geom_segment(x = 6, xend = 5, y = 1.9, yend = 1.1) +
+    geom_segment(x = 6, xend = 6, y = 1.9, yend = 1.1) +
+    geom_segment(x = 6, xend = 7, y = 1.9, yend = 1.1) +
+    geom_segment(x = 6, xend = 8, y = 1.9, yend = 1.1) +
+    geom_segment(x = 11, xend = 9, y = 1.9, yend = 1.1) +
+    geom_segment(x = 11, xend = 10, y = 1.9, yend = 1.1) +
+    geom_segment(x = 11, xend = 11, y = 1.9, yend = 1.1) +
+    geom_segment(x = 11, xend = 12, y = 1.9, yend = 1.1) +
+    geom_segment(x = 11, xend = 13, y = 1.9, yend = 1.1) +
+    scale_x_continuous(name = "", breaks = NULL, limits = c(0, 13.5)) +
+    theme_void()
+```
+
+With event data, we usually have repeated observations, so clustered data. It is therefore worthwhile to understand the basics of multilevel regression models.
+
+## Pupil-specific loudness levels: varying intercepts
+
+Have a look at average loudness of pupils during the break. 
+
+```{r meanloudnessplot}
+ggplot(loudness_average) +
+  geom_errorbar(aes(x = reorder(label, avg_loudness, FUN = mean), ymin = avg_loudness, ymax = avg_loudness)) +
+  labs(x = "", y = "Pupil's average loudness") +
+  scale_y_continuous(limits = c(0, 1)) +
+  geom_hline(yintercept = mean(loudness_average$avg_loudness), colour = brewercolors[["Blue"]]) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+There are quite notable differences between pupils. If Zameel is a loud one (at the right of the figure), knowing that the speaker is Zameel helps us predict a loud voice. 
+
+Zameel's voice is louder than the average across all pupils (the horizontal blue line in the figure). In contrast, Lily's voice is less loud than the average voice.
+
+Individuals' average score levels are modeled as <i class="question">varying (also called: random) intercepts</i> in a multilevel regression model.
+
+In our example, we estimate a 'personal loudness level' for each pupil, which is called an (individual) intercept. Because different pupils have different personal loudness levels (intercepts), we say that the intercepts vary across pupils. 
+
+The variation among pupils is calculated from the deviations of individual loudness levels (short black lines in the figure) from average loudness across all pupils (blue line). The variation statistics are called <i class="question">variance</i> or <i class="question">standard deviation</i>.
+
+If you are familiar with analysis of variance, then it may help to know that varying intercepts are very much like analysis of variance in which each pupil represents a group.
+
+## Multilevel regression models in R
+
+### Estimate a multilevel model
+
+Multilevel regression models cannot be estimated with the packages that are automatically loaded when we start R. We must load and use a new package. 
+
+We use the `lme4` package, which was installed on your computer when you installed this tutorial.
+
+The `lmer()` function in this package estimates multilevel models with a dependent/outcome variable that is numerical, like voice loudness. It works very much the same as the `lm()` function. Just add varying intercepts by adding `(1 | ID)` to the predictors:
+
+* `1` represents the intercept, 
+* `|` means: "let it vary by",
+* and `ID` is the variable identifying pupils (pupil ID).
+
+Let us have a look at an example.
+
+```{r multilevelR1, exercise = TRUE, exercise.eval = TRUE}
+# Ensure that the lme4 package is loaded ('has started').
+# Only need once per R session.
+library(lme4)
+# Estimate the regression model and store it as multilevel_model_1.
+multilevel_model_1 <- lmer(loudness ~ expo_last_max + sex + adhd + (1 | ID), data = loudness_events)
+# Show the stored results with the summary() function.
+summary(multilevel_model_1)
+```
+
+There are now two sets of effects:
+
+* <i class="question">Random effects</i>: the variation in pupil loudness level (varying intercepts) and the residuals, that is, the prediction errors. Both are expressed as a variance and standard deviation.
+* <i class="question">Fixed effects</i>: the regression coefficients for the independent/predictor variables, just like we know them from ordinary regression analysis.
+
+### Interpret effects
+
+The random effects are not very informative. They tell us that loudness level varies among pupils if the variance or standard deviation is not zero. 
+
+Check the number of observations (`Number of obs:`) in the results output. We have 688 utterances (level 1 observations) and 26 groups, each representing a pupil via the `ID` variable.
+
+The fixed effects now do not have a _p_ value, as indicated by `Pr(>|t|)` in an ordinary regression. Anyway, it is better to have a look at the confidence intervals. 
+
+<div class="question">
+Exercise
+
+1. Get the confidence intervals of the effects and draw a conclusion on the fixed effects (that is, not on `.sig01` and `.sigma`). Tip: Use the function you learned in Tutorial 1.
+
+```{r multilevelR2, exercise = TRUE, exercise.lines = 5}
+# Estimate the regression model and store it as multilevel_model_1.
+multilevel_model_1 <- lmer(loudness ~ expo_last_max + sex + adhd + (1 | ID), data = loudness_events)
+# Show the confidence intervals of the effects (add your code).
+
+```
+</div>
+
+The confidence intervals of the random effects give the most plausible values of the standard deviations (sigma), which is a measure of variation:
+
+* `.sig01`: the standard deviation of the intercepts, that is, the variation in pupil loudness levels;
+* `.sigma`: the standard deviation of the residuals, that is, the variation in prediction errors.
+
+Standard deviations are always positive (zero or larger), so we focus on the lower limit (`2.5 %` column). If the lower limit of `.sig01` is clearly above zero, we are confident that loudness levels differ systematically across the pupils.
+
+### Inspect the random effects
+
+So what are the estimated loudness levels of the pupils? Use the `ranef()` (for <i class="question">ran</i>dom <i class="question">ef</i>fects) function on the estimated multilevel model.
+
+```{r multilevelR3, exercise = TRUE}
+# Estimate the regression model and store it as multilevel_model_1.
+multilevel_model_1 <- lmer(loudness ~ expo_last_max + sex + adhd + (1 | ID), data = loudness_events)
+# Show the estimated loudness levels of the pupils.
+ranef(multilevel_model_1)
+```
+
+We get `r nrow(pupils_const)` values, one for each pupil.
+
+Note that these numbers show how much a pupil's loudness is above (positive number) or below (negative number) average loudness across all pupils, which is represented by the (fixed) effect of the intercept, which is `r round(fixef(multilevel_model_1)[[1]], digits = 2)` here.
+
+So the pupil with ID `1` (`r pupils_const[[1, "label"]]`) scores `r round(ranef(multilevel_model_1)$ID[1, 1], digits = 2)` below the overall average. This is quite in line with the graph in the second section of this tutorial.
+
+## Benefits of varying intercepts
+
+Why all the hassle with a multilevel model?
+
+Because we want to avoid the statistical sin of acting as if clustered data are independent data. If we commit this sin, we cannot trust the _p_ values and confidence intervals.
+
+Compare the confidence intervals for the effects of exposure, sex, and adhd for a model with (red) and without (blue) varying intercepts for individual loudness level in the below figure.
+
+```{r, fig.asp=0.5}
+# multilevel model
+multilevel_confint<- as_tibble(confint(lmer(loudness ~ expo_last_max + sex + adhd + (1 | ID), data = loudness_events)), rownames = "effect")
+# add single level model and create plot
+as_tibble(confint(lm(loudness ~ expo_last_max + sex + adhd, data = loudness_events)), rownames = "effect") %>%
+  #set model 1 name
+  mutate(Model = "Single Level") %>%
+  #add multilevel model confidence intervals by effect
+  bind_rows(multilevel_confint) %>%
+  #set model 2 name
+  mutate(Model = ifelse(is.na(Model), "Multilevel", Model)) %>%
+  #plot intervals
+  ggplot() +
+    geom_errorbar(
+      aes(x = effect, ymin = `2.5 %`, ymax = `97.5 %`,
+          colour = Model, group = Model),
+          position = "dodge"
+      ) +
+    geom_text(aes(x = effect, y = `2.5 %`, label = round(`2.5 %`, digits = 2), colour = Model), nudge_y = -0.015, size = 3) +
+    geom_text(aes(x = effect, y = `97.5 %`, label = round(`97.5 %`, digits = 2), colour = Model), nudge_y = 0.015, size = 3) +
+    geom_hline(yintercept = 0) +
+    labs(x = "Estimated effect", y ="Effect size", 
+         title = "Confidence intervals for two models") +
+    scale_color_manual(values = c(brewercolors[["Red"]], brewercolors[["Blue"]])) +
+    theme_bw()
+  
+```
+
+<div class="question">
+Excercises
+
+1. Are we equally sure about the direction of the effects (positive or negative) in both models?
+2. The differences between a multilevel and single-level model are not the same for, on the one hand, the effects of ADHD score and sex, and, on the other hand, exposure (`expo_last_max`). How do the confidence intervals differ?
+</div>
+
+###
+
+###
+
+We are less confident about the effects of pupil's ADHD score and sex on voice loudness in a multilevel model than in a single-level model. The red confidence intervals in the above figure are larger (wider) than the blue ones.
+
+As a consequence, the effect of sex can both be positive (girls have louder  voices than boys) and negative (boys are louder than girls) in the multilevel model, whereas we thought that we could conclude that the effect is negative (boys are louder) in the single level model. We do not reach the same conclusion!
+
+Acting as if every pupil had only one utterance in the single-level model, we pretend to have `r nrow(loudness_events)` different pupils. However, we only have `r nrow(pupils_const)` pupils. This is much less information to base our conclusions on, so we our less sure: these confidence intervals are larger in the multilevel model.
+
+In contrast, the effect of exposure on loudness is truly based on `r nrow(loudness_events)` different utterances because we have a separate loudness measurement for each utterance. Here, the information that we use is the same in the single-level and multilevel models, so the confidence interval of the effect in the multilevel model does not have to be larger than in the single-level model. 
+
+In this specific situation, it is actually shorter. We can be more precise on the plausible values of the exposure effect. With the multilevel model, we can rule out small effect sizes that were plausible in the single-level model (blue confidence interval).
+
+###
+
+With clustered data, such as repeating data, a multilevel model:
+
+* gives us correct confidence intervals,
+* and possibly different effect sizes.
+
+That's worth the effort!
+
+## Susceptibility to peer influence
+
+In addition to having individual loudness levels, some pupils may be more sensitive to loudness of other pupils. They are more susceptible to adjusting their voice loudness to their peers than other pupils. In other words, peer influence or network effects are stronger for them.
+
+We can test this in a multilevel model. Technically speaking, we estimate a separate effect of exposure for each pupil. Just like we estimated separate intercepts in the preceding section.
+
+<div class="question">
+Excercises
+
+1. How does the `lmer()` code (below) differ from the model with only varying intercepts?
+
+```{r randomslopes1, exercise = TRUE}
+# Estimate the regression model and store it as multilevel_model_2.
+multilevel_model_2 <- lmer(loudness ~ expo_last_max + sex + adhd + (expo_last_max | ID), data = loudness_events)
+# Show the stored results with the summary() function.
+summary(multilevel_model_2)
+```
+
+2. Run the code and inspect the output. Which random effects are estimated?
+</div>
+
+### 
+
+### 
+
+We simply replaced `(1 | ID)` by `(expo_last_max | ID)` to obtain:
+
+* Varying levels of loudness (intercepts) across pupils: `(Intercept)` under `Random effects:`;
+* Varying effects of exposure across pupils: `expo_last_max` under `Random effects:`.
+
+The variation of loudness levels across pupils has decreased from a standard deviation of about `r round(sd(ranef(lmer(loudness ~ expo_last_max + sex + adhd + (1 | ID), data = loudness_events))$ID[,1]), digits = 2)` in the previous model with only varying intercepts to around `r round(sd(ranef(lmer(loudness ~ expo_last_max + sex + adhd + (expo_last_max | ID), data = loudness_events))$ID[,1]), digits = 2)` now that we have added unique exposure effects for all pupils.
+
+According to these results, pupils do not vary as much in personal loudness level as we initialy thought. Instead, pupils vary in susceptibility to the loudness of their peers. Pupils who are more susceptible to the loudest voices around, raise their voices more. Therefore, they tend to be louder than other pupils.
+
+This illustrates the different types of explanation offered by varying intercepts and varying effects in this type of exposure models:
+
+* Varying intercepts refer to behavioral effects of a personal characteristic;
+* Varying exposure effects refer to sensibility or responsiveness to what happens in the network.
+
+###
+
+The `ranef()` function gives us the estimated intercept and exposure effect for each pupil. They are visualized in the below graph. The code is shown, so you can fiddle with it if you like.
+
+```{r multilevelplot2, exercise = TRUE, exercise.eval = TRUE}
+# Estimate the multilevel model with varying intercepts and effects.
+multilevel_model_2 <- lmer(loudness ~ expo_last_max + sex + adhd + (expo_last_max | ID), data = loudness_events)
+# Use the estimated random effects to create a plot.
+# Note that ID is the grouping variable here.
+ranef(multilevel_model_2)$ID %>%
+  #add pupil ID as sequential number (first row is for pupil with ID 1, ...)
+  mutate(ID = 1:26) %>%
+  #add pupil names (and other info) from data set pupils_const
+  left_join(pupils_const, by = "ID") %>%
+  #feed the data to the plot
+  ggplot() +
+    #adding a horizontal line at zero
+  geom_hline(yintercept = 0, colour = "blue") +
+    #abusing the errorbar a bit (not showing error intervals now)
+    #add black line segments for varying intercepts
+    #with pupil labels (on X axis) ordered by exposure effect
+    geom_errorbar(aes(x = reorder(label, expo_last_max), ymin = `(Intercept)`, ymax = `(Intercept)`)) +
+    #add red line segments for varying exposure effects
+    geom_errorbar(aes(x = reorder(label, expo_last_max), ymin = expo_last_max, ymax = expo_last_max), colour = "Red") +
+    #changing the labels of the axes
+    labs(x = "", 
+         y = "Estimates",
+         title = "Varying intercepts (black) and exposure effects (red)"
+         ) +
+    #setting the overall appearance of the figure
+    theme_bw() +
+    #setting pupil names at an angle for readability  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+In this plot, we can see which pupils have relatively strong exposure effects (to the right: higher red lines). These pupils are relatively suscepible to voice loudness of their peers. In contrast, we find pupils who are relatively little susceptible to peers' loudness to the left.
+
+We can also see that pupils with higher exposure effects also have higher intercepts (higher black lines). The two random effects are (cor)related.
+
+###
+
+If you want to practice some more with multilevel models, do the following exercise.
+
+<div class="question">
+Excercise
+
+1. Copy and adjust the previous code to estimate the effects of other exposure variables on loudness in a multilevel model. Inspect the results and compare them to the results of the multilevel models in previous sections. Which exposure variable(s) have the most convincing effects?
+</div>
+
+```{r finalExercises, exercise = TRUE}
+# Put and run your code here.
+
+```
+
+## Conclusion
+
+Multilevel models:
+
+* Include an individual's tendency to score high or low on the dependent/variable (varying intercepts);
+* May also include an individual's susceptibility to peer influence (exposure effects);
+* Are not very simple;
+* But can even be much more complex with, for example, pupils nested within classes, nested within schools, nested within countries;
+* Give better estimates and confidence intervals with clustered data;
+* And will pop up again later in this course.

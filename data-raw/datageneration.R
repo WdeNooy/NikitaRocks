@@ -1876,7 +1876,7 @@ cases_help <- utterances %>%
     playmates_help,
     by = c("ID.x" = "from", "ID.y" = "to")
   ) %>%
-  #add indicator whether or notpupil and peer are current playmates
+  #add indicator whether or not pupil and peer are current playmates
   mutate(
     playmate = case_when(
       is.na(onset) ~ 0, #no playmate info, so no playmates
@@ -1952,7 +1952,8 @@ loudness_events <- cases_help %>%
 loudness_events <- cases_help %>%
   #keep only utterances that have not terminated yet
   filter(
-    terminus.y >= onset.x
+    is.na(terminus.y) | #either peer's utterance has not ended
+    terminus.y >= onset.x #or it has ended at or after the start of the new utterance
   ) %>%
   #create cases and exposure variables
   group_by(ID.x, onset.x, terminus.x, loudness.x) %>%

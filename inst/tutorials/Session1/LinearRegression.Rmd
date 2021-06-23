@@ -289,7 +289,6 @@ Now run the code and inspect the results.
 my_first_model <- lm(avg_loudness ~ adhd, data = loudness_average)
 # Show the stored results with the summary() function.
 summary(my_first_model)
-
 ```
 
 If you run this code, you get a lot of numbers.
@@ -838,7 +837,8 @@ loudness_events <- cases_help %>%
 loudness_events <- cases_help %>%
   #keep only utterances that have not terminated yet
   filter(
-    terminus.y >= onset.x
+    is.na(terminus.y) | #either peer's utterance has not ended or ...
+    terminus.y >= onset.x #... it has ended at or after the start of the new utterance
   ) %>%
   #create cases and exposure variables
   group_by(ID.x, onset.x, terminus.x, loudness.x) %>%

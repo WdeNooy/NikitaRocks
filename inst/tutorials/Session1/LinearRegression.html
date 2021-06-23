@@ -137,7 +137,7 @@ $(document).ready(function () {
 <li>Friendships: fat gray lines.</li>
 <li>Playing together: thin black lines.</li>
 <li>Voice use: the blue circles, the louder, the darker (less transparent).</li>
-<li>Saying something to someone else: blue (positive statement) and (negative statement) red arrows.</li>
+<li>Saying something to someone else: green (positive utterance) and red (negative utterance) arrows.</li>
 </ol>
 <div class="container-fluid">
 <div class="row">
@@ -178,21 +178,21 @@ $(document).ready(function () {
 <h2>Regression essentials</h2>
 <p>If we apply statistical analysis, we basically believe:</p>
 <ul>
-<li>that we can measure characteristics (<i style="color:#5A9DDB;">variables</i>) of different objects (<i style="color:#5A9DDB;">cases</i>, <i style="color:#5A9DDB;">units</i>);</li>
+<li>that we can measure characteristics (<i class="question">variables</i>) of different objects (<i class="question">cases</i>, <i class="question">units</i>);</li>
 <li>that we can compare these measurements;</li>
 <li>that systematic differences between measurements are meaningful.</li>
 </ul>
 <p>For example, we believe that we can measure and compare voice loudness, pupil’s sex, and pupil’s ADHD score.</p>
 <p><img src="LinearRegression_files/figure-html/regresAggregated-1.png" width="50%" /><img src="LinearRegression_files/figure-html/regresAggregated-2.png" width="50%" /></p>
 <p>Each of the above plots compares pupil’s average voice loudness to a background characteristic of the pupil: pupil’s sex (left) and ADHD score (right).</p>
-<p>If we want to predict average voice loudness, we call this the <i style="color:#5A9DDB;">dependent</i> or <i style="color:#5A9DDB;">outcome</i> variable. Variables that we use to predict (sex, ADHD score) are called <i style="color:#5A9DDB;">independent</i> or <i style="color:#5A9DDB;">predictor</i> variables.</p>
+<p>If we want to predict average voice loudness, we call this the <i class="question">dependent</i> or <i class="question">outcome</i> variable. Variables that we use to predict (sex, ADHD score) are called <i class="question">independent</i> or <i class="question">predictor</i> variables.</p>
 <p>Sex is measured with two categories:</p>
 <ul>
 <li>boys (coded <code>0</code>) with average loudness score 0.57 (on a loudness scale from 0 to 1);</li>
 <li>girls (coded <code>1</code>), average loudness score is 0.546.</li>
 </ul>
 <p>If we look for systematic differences, we compare the mean (average) scores between boys and girls.</p>
-<p>We call the difference between the two means (-0.024) the <i style="color:#5A9DDB;">effect</i> of sex on loudness. Girls are slightly less loud than boys during this break.</p>
+<p>We call the difference between the two means (-0.024) the <i class="question">effect</i> of sex on loudness. Girls are slightly less loud than boys during this break.</p>
 <p>ADHD score is measured on a scale from 0 to 7.</p>
 <p>For systematic differences in loudness, we look at the consequences of a one unit change in ADHD:</p>
 <ul>
@@ -207,12 +207,15 @@ $(document).ready(function () {
 <li>this is about one quarter of the loudness scale (from 0 to 1);</li>
 <li>is this a lot?</li>
 </ul>
-<p>The straight blue lines in the plots are called <i style="color:#5A9DDB;">regression lines</i>.</p>
+<p>The straight blue lines in the plots are called <i class="question">regression lines</i>.</p>
 <p>How do we get a regression line?</p>
 </div>
 <div id="section-ordinary-regression-in-r" class="section level2">
 <h2>Ordinary regression in R</h2>
 <p>If the variable that we want to predict is numerical (real numbers, not a set of category codes), we can use the <code>lm()</code> function to estimate a regression line (regression model).</p>
+<p>If you are new to R, take a moment to read the code below. In green, you see comments, which are not executed. Use <code>#</code> to create a comment.</p>
+<p>The two black lines do the real work. The first black line executes a regression analysis (using <code>lm()</code> with <code>avg_loudness</code> as outcome left of <code>~</code> and <code>adhd</code> as predictor right of <code>~</code>) and stores (<code>&lt;-</code>) the results in a data object called <code>my_first_model</code>. The second black line shows a summary of the results.</p>
+<p>Now run the code and inspect the results.</p>
 <div class="tutorial-exercise" data-label="regression" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
 <pre class="text"><code># Estimate a regression model with lm() and save the results in my_first_model.
 # Use the data set loudness_average, which contains variables:
@@ -224,17 +227,17 @@ $(document).ready(function () {
 # - adhd: pupil&#39;s ADHD score.
 # R is case-sensitive!
 
-# Estimate the regression model.
+# Estimate the regression model and store it as my_first_model.
 my_first_model &lt;- lm(avg_loudness ~ adhd, data = loudness_average)
-# Show the results with the summary() function.
+# Show the stored results with the summary() function.
 summary(my_first_model)</code></pre>
 <script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
 </div>
-<p>Wow, those are a lot of numbers!</p>
+<p>If you run this code, you get a lot of numbers.</p>
 <ul>
 <li>Look at the table of coefficients,</li>
 <li>spot the row with <code>adhd</code>,</li>
-<li>look at the number under <code>Estimate</code> in this row (<i style="color:#5A9DDB;">the unstandardized regression coefficient</i>, <em>b</em>);</li>
+<li>look at the number under <code>Estimate</code> in this row (<i class="question">the unstandardized regression coefficient</i>, <em>b</em>);</li>
 <li>this is the effect of ADHD on voice loudness.</li>
 <li>Didn’t we see this number before?</li>
 <li>What was the meaning of this number?</li>
@@ -270,24 +273,25 @@ summary(my_first_model)</code></pre>
 ## F-statistic: 2.779 on 2 and 23 DF,  p-value: 0.08297</code></pre>
 <p>In the summary of a regression model, you encounter the column <code>Pr(&gt;|t|)</code>:</p>
 <ul>
-<li>which gives the so-called <i style="color:#5A9DDB;">p value</i> of a statistical test on the estimated effect;</li>
+<li>which gives the so-called <i class="question">p value</i> of a statistical test on the estimated effect;</li>
 <li>if this value is below .05, the test is statistically significant,</li>
 <li>as indicated by the stars.</li>
 </ul>
 <p>Statistical significance is the most popular and probably worst understood concept in statistics.</p>
 <ul>
-<li>A <i style="color:#5A9DDB;">significant</i> effect does NOT mean that there is a substantive or substantially interesting effect.</li>
-<li>An <i style="color:#5A9DDB;">insignificant</i> effect does NOT mean that there is no effect.</li>
+<li>A <i class="question">significant</i> effect does NOT mean that there is a substantive or substantially interesting effect.</li>
+<li>An <i class="question">insignificant</i> effect does NOT mean that there is no effect.</li>
 </ul>
+<p>So what does it mean?</p>
 </div>
 <div id="section-confidence-intervals" class="section level2">
 <h2>Confidence intervals</h2>
-<p>For understanding the significance test, we can look at the <i style="color:#5A9DDB;">confidence interval</i> of an effect.</p>
+<p>For understanding the significance test, we can look at the <i class="question">confidence interval</i> of an effect.</p>
 <div class="tutorial-exercise" data-label="confint" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
-<pre class="text"><code># Again, estimate a regression model with lm() and save the results in my_first_model.
-my_third_model &lt;- lm(avg_loudness ~ sex + adhd, data = loudness_average)
+<pre class="text"><code># Again, estimate a regression model with lm() and save the results in my_second_model.
+my_second_model &lt;- lm(avg_loudness ~ sex + adhd, data = loudness_average)
 # Use function confint() to get the confidence intervals of the effects.
-confint(my_third_model, level = 0.95)</code></pre>
+confint(my_second_model, level = 0.95)</code></pre>
 <script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
 </div>
 <ul>
@@ -314,14 +318,526 @@ confint(my_third_model, level = 0.95)</code></pre>
 <div class="tip">
 <p>So, the meaning of statistical significance:</p>
 <ul>
-<li>if an effect is statistically significant, we are confident that we know the direction (sign) of the effect: Predicted values either increase or decrease for higher predictor levels;</li>
+<li>if an effect is statistically significant, we are confident that we know the direction (sign) of the effect: Predicted (outcome) values either increase or decrease for higher predictor levels;</li>
 <li>if an effect is NOT statistically significant, we are NOT confident that we know the direction (sign) of the effect.</li>
 </ul>
 </div>
 </div>
 <div id="section-exposure-to-loud-peers" class="section level2">
 <h2>Exposure to loud peers</h2>
+<p>A pupil can be loud at some moments and not so loud on other moments during a break. So let us not analyze average loudness of a pupil over the entire break. Instead, let us analyze all events in which pupils raise their voices.</p>
+<div class="tip">
+<p>Analysis goal: If a pupil raises their voice at a particular moment (the event), we want to predict voice loudness (the dependent/outcome variable).</p>
+</div>
+<p>Let us have a look at the network at time 2:12 during the break. Truyen is clearly louder than, for example, Dakota or Hailey (remember: the darker/more opaque a blue circle, the louder). Why would that be? Can we predict (or explain) this?</p>
+<p><img src="images/breakdyn29.png" width="600px" /></p>
+<p>Truyen is playing with Shrika and Desiree (black lines), both of whom are also talking. Truyen is talking with Desiree in a friendly tone (mutual green arrows), whereas Shrika seems to be having an argument with Hunter (mutual red arrows).</p>
+<p>Here, voice loudness seems to depend:</p>
+<ol style="list-style-type: decimal">
+<li>not just on stable characteristics of the speaker (<i class="question">node attributes</i>): sex, ethnicity, ADHD score,</li>
+<li>also on loudness of other pupils,</li>
+<li>and the (current) relations with other pupils: playing together, being addressed (positively or negatively), and perhaps friendship, or merely being together.</li>
+</ol>
+<p>The combination of points 2 and 3 is generally called <i class="question">network exposure</i>:</p>
+<ul>
+<li>due to your current relation with a peer (e.g., playmate, being together on the playground)</li>
+<li>who has a particular characteristic (e.g., speaks at a particular volume),</li>
+<li>you are aware of that characteristic</li>
+<li>and (more) likely to respond to it (e.g., adjust your own volume).</li>
+</ul>
+</div>
+<div id="section-measuring-exposure" class="section level2">
+<h2>Measuring exposure</h2>
+<p>Constructing predictor variables like exposure is a challenge in the analysis of events within social networks. How should we measure exposure?</p>
+<p>For each time a pupil uses their voice, we need one and only one score that reflects the exposure to other peers’ voices at or before that moment.</p>
+<p>We must choose:</p>
+<ol style="list-style-type: decimal">
+<li>a <i class="question">time window</i>: How far back do we include preceding events in the network, e.g., utterances by other pupils?</li>
+<li>an <i class="question">aggregation function</i>: Several peers may have produced events (spoke) and each peer may have produced more than one event, how do we combine these in one exposure score? And do we take into account non-events, e.g., peers who did not use their voice?</li>
+<li>a <i class="question">subdivision by type of relation</i>: How do we take into account the current relation(s) between pupil and peers?</li>
+</ol>
+<p>If we want to predict the loudness of Truyen’s utterance at time 2:12 (red in the below figure), we have to look at the utterances occurring beforehand. The figure shows the utterances (blue bars), Truyen’s playmate ties (grey rectangles), and addressees of utterances (arrows, green indicates positive utterances) over time.</p>
+<p><img src="LinearRegression_files/figure-html/unnamed-chunk-6-1.png" width="624" /></p>
+<p>Ad 1, <i class="question">time window</i>: Three possible time windows are indicated by dashed boxes. The longer the time window, the more utterances (by more pupils) are included in the calculation of exposure.</p>
+<p>Ad 2, <i class="question">aggregation function</i>: We can use (among others) the mean, last, maximum, or minimum loudness of all utterances within the selected time window. In addition, we can calculate a weighted mean, weighing recent utterances more strongly than distant utterances.</p>
+<p>Ad 3, a <i class="question">subdivision by type of relation</i>: If we want to know whether loudness of playmates or conversation partners is more important to a speaker’s loudness, we must create separate exposure variables for loudness of conversation partners, playmates, and peers who are neither of the two.</p>
+<div class="tip">
+<p>Example: Truyen’s exposure as the average value of the loudness of each pupil’s last utterance in the preceding minute subdivided by loudness of conversation partners, playmates, and other pupils.</p>
+<p>Exposure variables and Truyen’s score on these:</p>
+<ul>
+<li>Exposure to loudness of conversation partners = Desiree’s loudness in her last utterance before 2:12. Desiree is the only pupil who said something to Truyen in the preceding minute, so her last utterance counts.</li>
+<li>Exposure to loudness of playmates = the average loudness of Desiree and Shnika’s last utterances.</li>
+<li>Exposure to loudness of other pupils = the average loudness of the last utterances by Hunter, Hailey, Dakota, and Maverick.
+</div></li>
+</ul>
+</div>
+<div id="section-estimating-exposure-effects" class="section level2">
+<h2>Estimating exposure effects</h2>
+<p>The data set <em>loudness_events</em> contains several exposure variables:</p>
+<p>Window: only current voices.</p>
+<ol style="list-style-type: decimal">
+<li>expo_last_max: The loudest voice at the moment a pupil starts an utterance.</li>
+<li>expo_last_mean: The average sound level at the moment a pupil starts an utterance.</li>
+<li>expo_last_min: The softest voice at the moment a pupil starts an utterance.</li>
+</ol>
+<p>Window: all voices in the last minute.</p>
+<ol start="4" style="list-style-type: decimal">
+<li>expo_minute_max_playmate: The loudest voice of playmates’ last utterances in the preceding minute.</li>
+<li>expo_minute_max_conversation: The loudest voice of conversation partners’ last utterances in the preceding minute.</li>
+<li>expo_minute_max_other: The loudest voice of all other pupils’ last utterances in the preceding minute.</li>
+</ol>
+<p>Note: If a pupil does not have a playmate or conversation partner, playmate or conversation partner exposure is set to the average of the variable during the break.</p>
+<div class="question">
+<p>Exercises</p>
+<ol style="list-style-type: decimal">
+<li>Use the data set <em>loudness_events</em> to estimate a regression model predicting pupils’ loudness (variable <code>loudness</code>) from the loudest voice at the moment a pupil starts an utterance (variable <code>expo_last_max</code>), pupil’s sex (variable <code>sex</code>) and adhd score (variable <code>adhd</code>). Interpret the confidence interval of the exposure effect.</li>
+</ol>
+<div class="tutorial-exercise" data-label="exposure1" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># Estimate the model: Enter the variables and data set!
+exposure_model1 &lt;- lm( ~ , data = )
+# Show confidence intervals of the effects.
+confint(exposure_model1)</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<ol start="2" style="list-style-type: decimal">
+<li>Replace the exposure variable <code>expo_last_max</code> by <code>expo_last_mean</code> (the average sound level at the moment a pupil starts an utterance). How does the exposure effect change? Which exposure variable has a more convincing effect?</li>
+</ol>
+<div class="tutorial-exercise" data-label="exposure2" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="5">
+<pre class="text"><code># Copy &amp; paste previous code and change what is necessary?</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<ol start="3" style="list-style-type: decimal">
+<li>Estimate a regression model predicting pupils’ loudness (variable <code>loudness</code>) from the exposure to voices in the preceding minute separated by type of relation: voices of current playmates (variable: <code>expo_minute_max_playmate</code>), current conversation partners (variable: <code>expo_minute_max_conversation</code>), and other pupils (variable: <code>expo_minute_max_other</code>). Also include pupil’s sex and adhd score. Interpret the confidence intervals of the three exposure effects. Which effect is most convincing?</li>
+</ol>
+<div class="tutorial-exercise" data-label="exposure3" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="5">
+<pre class="text"><code># Copy &amp; paste previous code and change what is necessary.</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+</div>
+</div>
+<div id="section-data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>As said before, calculating the exposure variables is complicated. In this section, you can see how that can be done.</p>
+<p>This is an advanced topic that you should probably only study if you start working with your own data.</p>
+<p>This tutorial uses the tidyverse approach to data wrangling (preparation). Study the book <a href="https://r4ds.had.co.nz/">R for Data Science</a> if you are not familiar with this type of R code.</p>
+<div id="section-basic-data" class="section level3">
+<h3>Basic data</h3>
+<p>With events within networks, we usually have four data sets:</p>
+<ol style="list-style-type: decimal">
+<li><p>A data set with characteristics of the network nodes (here: pupils) that do not change, such as sex and ADHD level. In our case, this data set is called <code>pupils_const</code>. It contains one row for each pupil.</p></li>
+<li><p>A data set with characteristics of the network nodes (here: pupils) that may change, such as voice loudness. In our case, this data set is called <code>pupils_dyn</code>. It contains one row for each time that an event happens for a pupil, for example, one row for each time pupils raise their voices. It also contains the timing of the event: onset (<code>start</code>) and end (<code>terminus</code>).</p></li>
+<li><p>A data set with characteristics of the network links (here: links between pairs of pupils) that do not change, such as friendship ties. In our case, this data set is called <code>pairs_const</code>. It contains one row for each pair of pupils, with the sender of the tie (<code>from</code>) and the receiver (<code>to</code>). In our data, friendship is a symmetrical relation, so if A is friend with B, there is both a row with A as sender and B as receiver and a row with B as sender and A receiver.</p></li>
+<li><p>A data set with characteristics of the network links (here: links between pairs of pupils) that may change, such as playmate ties. In our case, this data set is called <code>pairs_dyn</code>. Just like <code>pairs_const</code>, it contains one row for each pair of pupils, with the sender of the tie (<code>from</code>) and the receiver (<code>to</code>).</p></li>
+</ol>
+<div class="question">
+<p>Exercises</p>
+<ol style="list-style-type: decimal">
+<li>Inspect the variables and cases of the data set <code>pupils_const</code>. Do they fit the above description?</li>
+</ol>
+<div class="tutorial-exercise" data-label="basicdata1" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># Check out the variables in a data set with the str() function (str = structure).
+str(pupils_const)</code></pre>
+<pre><code>tibble [26 x 8] (S3: tbl_df/tbl/data.frame)
+ $ ID       : int [1:26] 1 2 3 4 5 6 7 8 9 10 ...
+ $ label    : chr [1:26] &quot;Hunter&quot; &quot;Charles&quot; &quot;Jessica&quot; &quot;Judith&quot; ...
+ $ present  : logi [1:26] TRUE TRUE TRUE TRUE TRUE TRUE ...
+ $ onset    : num [1:26] 0 0 0 0 0 0 0 0 0 0 ...
+ $ terminus : num [1:26] 780 780 780 780 780 780 780 780 780 780 ...
+ $ sex      : num [1:26] 0 0 1 1 0 1 1 0 0 0 ...
+ $ ethnicity: chr [1:26] &quot;D&quot; &quot;A&quot; &quot;C&quot; &quot;C&quot; ...
+ $ adhd     : num [1:26] 1.4 1.9 0.5 2.9 0.6 0.4 0.7 1 3.7 0.5 ...</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<div class="tutorial-exercise" data-label="basicdata2" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># View the first few lines of data with print() or head().
+head(pupils_const)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["ID"],"name":[1],"type":["int"],"align":["right"]},{"label":["label"],"name":[2],"type":["chr"],"align":["left"]},{"label":["present"],"name":[3],"type":["lgl"],"align":["right"]},{"label":["onset"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["terminus"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["sex"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["ethnicity"],"name":[7],"type":["chr"],"align":["left"]},{"label":["adhd"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"1","2":"Hunter","3":"TRUE","4":"0","5":"780","6":"0","7":"D","8":"1.4"},{"1":"2","2":"Charles","3":"TRUE","4":"0","5":"780","6":"0","7":"A","8":"1.9"},{"1":"3","2":"Jessica","3":"TRUE","4":"0","5":"780","6":"1","7":"C","8":"0.5"},{"1":"4","2":"Judith","3":"TRUE","4":"0","5":"780","6":"1","7":"C","8":"2.9"},{"1":"5","2":"Omar","3":"TRUE","4":"0","5":"780","6":"0","7":"C","8":"0.6"},{"1":"6","2":"Z'Reya","3":"TRUE","4":"0","5":"780","6":"1","7":"B","8":"0.4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<div class="tutorial-exercise" data-label="basicdata3" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># If you want to see a description of the data, use the help function.
+?pupils_const</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<ol start="2" style="list-style-type: decimal">
+<li>Change the above code to inspect the other three data sets.</li>
+</ol>
+</div>
+</div>
+<div id="section-calculating-exposure-variables" class="section level3">
+<h3>Calculating exposure variables</h3>
+<p>Every row in the <code>pupils_dyn</code> data set (with a value for <code>loudness</code>) represents a pupil using their voice. We want to predict the loudness of the voice, which is our dependent/outcome variable.</p>
+<p>We want to predict it from the loudness of preceding voices, so we must select the preceding voice events (within the chose time window) and calculate exposure scores.</p>
+<p>The code below does the trick. As you can see, it is not simple.</p>
+<pre class="r"><code># data preparation for analyzing loudness at the event level with several
+# exposure variables.
+# first create a helper data frame only containing utterances in Break 1
+utterances &lt;- pupils_dyn %&gt;%
+  #select utterances in Break 1
+  filter(
+    breakID == 1 &amp; #only events in Break 1
+    !is.na(loudness)
+  ) %&gt;%
+  #drop the superfluous variables
+  select(-onset.censored, -terminus.censored, -gameapp, -breakID)
+# next, create a helper data frame containing playmates and utterance addressees in Break 1
+playmates_help &lt;- pairs_dyn %&gt;%
+  #keep relations in Break 1 and only playmates
+  filter(breakID == 1 &amp; dyntie == &quot;Playmate&quot;) %&gt;%
+  #remove superfluous variables
+  select(-breakID, -onset.censored, -terminus.censored, -negative)
+addressing_help &lt;- pairs_dyn %&gt;%
+  #keep relations in Break 1 and utterances
+  filter(breakID == 1 &amp; dyntie == &quot;Utterance&quot;) %&gt;%
+  #remove superfluous variables
+  select(-breakID, -onset.censored, -terminus.censored, -dyntie)
+# then, create a helper data frame with all last utterances of peers for all
+# utterances to be predicted
+cases_help &lt;- utterances %&gt;%
+  #link every utterance to all utterances
+  #BEWARE: can create a very large intermediary data frame
+  full_join(utterances, by = character()) %&gt;%
+  #select only joined (second) utterances that happened in the minute
+  # preceding the utterance to be predicted (first utterance)
+  # because our longest window is 1 minute
+  filter(
+    onset.y &lt; onset.x &amp; #the second utterance must have started before the first..
+    onset.y &gt;= onset.x - 1 &amp; #..but not longer ago than 1 minute (onset is measured in minutes)
+    ID.x != ID.y #don&#39;t use utterances by the pupil of the utterance to be predicted
+  ) %&gt;%
+  #add valence of incoming relations between pupil (ID.x) and peer (ID.y)
+  # note that the pairs is reversed: 
+  # - an utterance from peer to pupil is linked to the (pupil,peer) pair,
+  # - so we have incoming utterances linked to the pupil
+  # - variable negative (!is.na) identifies incoming utterances among all utterances of peers
+  left_join(
+    addressing_help, 
+    by = c(&quot;ID.x&quot; = &quot;to&quot;, &quot;ID.y&quot; = &quot;from&quot;, &quot;onset.y&quot; = &quot;onset&quot;, &quot;terminus.y&quot; = &quot;terminus&quot;)
+    ) %&gt;%
+  #add playmate relations (ignore timing)
+  left_join(
+    playmates_help,
+    by = c(&quot;ID.x&quot; = &quot;from&quot;, &quot;ID.y&quot; = &quot;to&quot;)
+  ) %&gt;%
+  #add indicator whether or notpupil and peer are current playmates
+  mutate(
+    playmate = case_when(
+      is.na(onset) ~ 0, #no playmate info, so no playmates
+      onset &lt; onset.x &amp; terminus &gt;= onset.x ~ 1, #playing/conversation has started before the utterance to be predicted and pupil and peer are still playmates
+      TRUE ~ 0 #no playmates
+    )
+  ) %&gt;%
+  # select the temporally last utterance of each peer for each utterance of the pupil we want to predict
+  # and whether or not any of the utterances was incoming
+  # (every ID-onset combination of the first set of utterances)
+  group_by(ID.x, onset.x, terminus.x, loudness.x, ID.y) %&gt;%
+  summarise(
+    terminus.y = last(terminus.y, order_by = onset.y),
+    loudness.y = last(loudness.y, order_by = onset.y),
+    negative = last(negative, order_by = onset.y), #was peer&#39;s last utterance incoming?
+    any_incoming = sum(!is.na(negative)) &gt; 0, #was any of peer&#39;s utterances incoming?
+    playmate = max(playmate), #1 = curent playmates, 0 = currently not playmates
+    onset.y = last(onset.y, order_by = onset.y),
+    .groups = &quot;drop&quot;
+  )
+# finally, calculate exposure scores for each event with different windows, aggregations, and selections
+# a case is a ID-onset combination
+# Window: all voices in the last minute.
+# 4. expo_minute_max_playmate: The loudest voice of playmates&#39; last utterances in the preceding minute. 
+# 5. expo_minute_max_conversation: The loudest voice of conversation partners&#39; last utterances in the preceding minute. 
+# 6. expo_minute_max_other: The loudest voice of all other pupils&#39; last utterances in the preceding minute. 
+loudness_events &lt;- cases_help %&gt;%
+  #helper variables: peer loudness for conversation partners, playmates, and others (first two categories may overlap)
+  mutate(
+    loudness_playmate = ifelse(playmate == 1, loudness.y, NA),
+    loudness_conversation = ifelse(!is.na(negative), loudness.y, NA),
+    loudness_other = ifelse(is.na(negative) &amp; playmate == 0, loudness.y, NA)
+  ) %&gt;%
+  #create cases and exposure variables
+  group_by(ID.x, onset.x, terminus.x, loudness.x) %&gt;%
+  summarise(
+    expo_minute_max_playmate = max(loudness_playmate, na.rm = TRUE),
+    expo_minute_max_conversation = max(loudness_conversation, na.rm = TRUE),
+    expo_minute_max_other = max(loudness_other, na.rm = TRUE),
+    .groups = &quot;drop&quot;
+  ) %&gt;%
+  #replace -Inf by NA
+  mutate(
+    expo_minute_max_playmate = ifelse(
+      is.infinite(expo_minute_max_playmate),
+      NA, expo_minute_max_playmate),
+    expo_minute_max_conversation = ifelse(
+      is.infinite(expo_minute_max_conversation),
+      NA, expo_minute_max_conversation),
+    expo_minute_max_other = ifelse(
+      is.infinite(expo_minute_max_other),
+      NA, expo_minute_max_other)
+  ) %&gt;%
+  #replace NA by variable mean
+  mutate(
+    expo_minute_max_playmate = ifelse(
+      is.na(expo_minute_max_playmate),
+      mean(expo_minute_max_playmate, na.rm = TRUE),
+      expo_minute_max_playmate),
+    expo_minute_max_conversation = ifelse(
+      is.na(expo_minute_max_conversation),
+      mean(expo_minute_max_conversation, na.rm = TRUE),
+      expo_minute_max_conversation),
+    expo_minute_max_other = ifelse(
+      is.na(expo_minute_max_other),
+      mean(expo_minute_max_other, na.rm = TRUE),
+      expo_minute_max_other)
+  )
+# Window: only current voices.
+# 1. expo_last_max: The loudest voice at the moment a pupil starts an utterance.
+# 2. expo_last_mean: The average sound level at the moment a pupil starts an utterance.
+# 3. expo_last_min: The softest voice at the moment a pupil starts an utterance.
+loudness_events &lt;- cases_help %&gt;%
+  #keep only utterances that have not terminated yet
+  filter(
+    is.na(terminus.y) | #either peer&#39;s utterance has not ended or ...
+    terminus.y &gt;= onset.x #... it has ended at or after the start of the new utterance
+  ) %&gt;%
+  #create cases and exposure variables
+  group_by(ID.x, onset.x, terminus.x, loudness.x) %&gt;%
+  summarise(
+    expo_last_max = max(loudness.y, na.rm = TRUE),
+    expo_last_mean = mean(loudness.y, na.rm = TRUE),
+    expo_last_min = min(loudness.y, na.rm = TRUE),
+    .groups = &quot;drop&quot;
+  ) %&gt;%
+  #join to events with first set of exposure variables
+  full_join(loudness_events, by = c(&quot;ID.x&quot;, &quot;onset.x&quot;, &quot;terminus.x&quot;, &quot;loudness.x&quot;)) %&gt;%
+  #add time-constant pupil attributes
+  left_join(pupils_const, by = c(&quot;ID.x&quot; = &quot;ID&quot;))  %&gt;%
+  #select and rename variables
+  select(
+    ID = ID.x,
+    onset = onset.x,
+    terminus = terminus.x,
+    loudness = loudness.x,
+    expo_last_max:label,
+    sex:adhd
+  )
+# cleanup helper data
+rm(utterances, addressing_help, playmates_help, cases_help)</code></pre>
+</div>
+<div id="section-visualization" class="section level3">
+<h3>Visualization</h3>
+<p>So far, I have not encountered an R package that visualizes a network of events such that every change in the network is reflected.</p>
+<p>As a consequence, I have created the animated visualization the hard way, creating a snapshot of the entwork at every moment an event starts. The animation is just the sequence of these snapshots.</p>
+<p>If you want to know how, inspect the code below.</p>
+<pre class="r"><code># Tutorial preparation: adjusted data sets, visualizations, and analyses
 
+# Load all required packages.
+library(tidyverse) #for general data wrangling and visualization
+library(ggraph) #for network visualization
+library(RColorBrewer) #for colour palettes
+
+# Load the data sets as provided to the user.
+load(&quot;data-raw/basicdata.RData&quot;)
+
+# Standard colors to use
+brewercolors &lt;- brewer.pal( 5, name =  &quot;Spectral&quot;)
+brewercolors[3] &lt;- &quot;#ffff00&quot;
+names(brewercolors) &lt;- c(&quot;Red&quot;, &quot;Orange&quot;, &quot;Yellow&quot;, &quot;Green&quot;, &quot;Blue&quot;)
+
+# Animated visualization of Break 1
+
+# - for every start of a playmate tie or utterance (with/out target), there is a
+#   snapshot of the network (sequence entry)
+# - the network shows the pupils (names, sex as shape, colour for ethnicity)
+#   with their friendship ties (not varying), playmate ties, utterance loudness
+#   (vertex size or size of circle behind vertex), and utterances towards peers
+#   (positive versus negative)
+# - network layout is fixed or interpolated between layouts calculated over all
+#   ties and interactions within a selected time span, e.g., with an
+#   interpolation for each event start within the selected time span:
+#   - starting with layout based only on friendships
+# - strategy: for a time point (in the sequence) select the (constant and)
+#   dynamic attributes and ties  as well as the layout coordinates that happen/are
+#   happening at this time point
+
+# determine the sequence of event start times in Break 1 (531 time points)
+timepoints &lt;- pupils_dyn %&gt;%
+  #retain onset time
+  select(onset) %&gt;%
+  #add to (onset in) pairs_dyn
+  bind_rows(pairs_dyn) %&gt;%
+  #select Break 1
+  filter(breakID == 1) %&gt;%
+  #keep one row for each time point
+  group_by(onset) %&gt;%
+  summarise(.groups = &quot;drop&quot;) %&gt;%
+  #add zero as start moment
+  bind_rows(tibble(onset = 0)) %&gt;%
+  #rename onset
+  rename(timepoint = onset) %&gt;%
+  #arrange (ensure that 0 becomes first entry)
+  arrange(timepoint)
+
+# determine starting positions of pupils based on friendship (not necessary: at time = 0 there are only friendships?)
+# create data frame of edges
+edges &lt;- pairs_const %&gt;%
+  #keep only friendships and one friendship case per pair
+  filter(from &lt; to &amp; friend == 1) %&gt;%
+  #select friendships
+  select(from, to)
+# be sure that the nodes are sorted by ID
+pupils_const &lt;- pupils_const %&gt;%
+  arrange(ID)
+#create network (graph)
+friends_net &lt;- graph_from_data_frame(edges, directed = FALSE, vertices = pupils_const)
+#calculate layout (positions of nodes)
+set.seed(2584)
+start_layout &lt;- create_layout(friends_net, layout = &#39;kk&#39;) %&gt;%
+  #only keep coordinates
+  select(x, y) %&gt;%
+  #save as matrix
+  as.matrix()
+# cleanup
+rm(friends_net)
+
+# loop for each time point
+for (t in 1:nrow(timepoints)) {
+
+  # create the network for time point t
+  # create nodes
+  nodes &lt;- pupils_dyn %&gt;%
+    #select dynamic attributes (if any) for the current time point
+    filter(
+      breakID == 1 &amp; #we only visualize network evolution in the first break
+      onset &lt;= timepoints$timepoint[t] &amp; #dynamic attribute must start at or before the current timepoint...
+      terminus &gt;= timepoints$timepoint[t] #...and end at or after the current timepoint
+    ) %&gt;%
+    #and add constant attributes (ensuring that all pupils are present)
+    full_join(pupils_const, by = &quot;ID&quot;) %&gt;%
+    #keep relevant variables
+    select(ID, loudness, gameapp, label, sex:adhd) %&gt;%
+    # set missing values on loudness and gameapp to 0 (no sound, not gaming)
+    mutate(
+      loudness = ifelse(is.na(loudness), 0, loudness),
+      gameapp = ifelse(is.na(gameapp), 0, gameapp)
+    ) %&gt;%
+    #sort by vertex ID
+    arrange(ID) %&gt;%
+    # ensure that there is only one case per pupil
+    group_by(ID) %&gt;%
+    slice_head(n = 1) %&gt;% #select the first row for a pupil (in case there are duplicates)
+    ungroup()
+  # create edges: one row for undirected edge
+  edges &lt;- pairs_dyn %&gt;%
+    #select dynamic relations (if any) for the current time point
+    filter(
+      breakID == 1 &amp; #we only visualize network evolution in the first break
+        onset &lt;= timepoints$timepoint[t] &amp; #dynamic attribute must start at or before the current timepoint...
+        terminus &gt;= timepoints$timepoint[t] #...and end at or after the current timepoint
+    ) %&gt;%
+    #add constant ties (friendships) as additional rows
+    bind_rows(pairs_const) %&gt;%
+    #keep relevant rows
+    filter(
+      (is.na(friend) | friend == 1) &amp; #remove rows originally from pairs_const that are not friends (friend == 0)
+      (((is.na(dyntie) | dyntie == &quot;Playmate&quot;) &amp; from &lt; to ) | #for friends and playmates, only retain one case
+      dyntie == &quot;Utterance&quot; ) #but keep all (directed) utterances
+    ) %&gt;%
+    #set variable dyntie for friendships and change negative into character variable
+    mutate(
+      dyntie = ifelse(is.na(dyntie), &quot;Friendship&quot;, dyntie),
+      Valence = ifelse(negative == 1, &quot;neg&quot;, &quot;pos&quot;) #for plotting within Shiny, use colornames such as red and darkgreen
+      ) %&gt;%
+    #select relevant variables
+    select(from, to, dyntie, Valence)
+  #create network (graph)
+  temp_net &lt;- graph_from_data_frame(edges, directed = TRUE, vertices = nodes)
+  #calculate layout (positions of nodes)
+  temp_layout &lt;- create_layout(temp_net, layout = &quot;igraph&quot;, algorithm = &#39;kk&#39;, coords = start_layout, dim = 2) # start_layout) #
+  #store as starting positions for next plot
+  start_layout &lt;- temp_layout %&gt;%
+    #only keep coordinates
+    select(x, y) %&gt;%
+    #save as matrix
+    as.matrix()
+
+  # create the network plot for this time point
+  ggraph(temp_layout) +
+    geom_edge_link(
+      aes(filter = (dyntie == &quot;Friendship&quot;)),
+      colour = &quot;grey&quot;,
+      alpha = 0.7,
+      edge_width = 2.3
+      ) +
+    geom_edge_link(
+      aes(filter = (dyntie == &quot;Playmate&quot;)),
+      colour = &quot;black&quot;,
+      edge_width = 0.7
+      ) +
+    geom_edge_fan(
+      aes(
+        filter = (dyntie == &quot;Utterance&quot;),
+        #alpha = stat(index),
+        colour = Valence
+        ),
+      show.legend = FALSE,
+      arrow = arrow(angle = 30, length = unit(3, &quot;mm&quot;), type = &quot;closed&quot;),
+      end_cap = circle(4, &#39;mm&#39;),
+      edge_width = 1.5
+    ) +
+    geom_node_point(
+      aes(fill = ethnicity, shape = ifelse(sex == 1, &quot;girl&quot;, &quot;boy&quot;)),
+      size = 6
+    ) +
+    geom_node_point(
+      aes(
+        filter = (loudness &gt; 0),
+        alpha = loudness
+      ),
+      show.legend = FALSE,
+      shape = 1,
+      colour = brewercolors[&quot;Blue&quot;],
+      stroke = 2,
+      size = 14
+    ) +
+    geom_node_text(aes(label = label), nudge_y = 0.1, vjust = 0, size = 3) +
+    geom_text(
+      label = paste0(&quot;Time &quot;,
+                     format(trunc(timepoints$timepoint[t]), width = 2), &quot;:&quot;,
+                     formatC(round(60 * (timepoints$timepoint[t] %% 1)),
+                            flag = &quot;0&quot;, width=2)),
+      x = max(temp_layout$x), y = max(temp_layout$y),
+      hjust = 1, #aligned left
+      vjust = 0, #aligned bottom
+      size = 4
+      ) +
+    scale_edge_alpha(&quot;Edge direction&quot;, guide = &quot;none&quot;) +
+    scale_shape_manual(name = &quot;Sex&quot;, values = c(22, 21)) +
+    scale_fill_brewer(name = &quot;Ethnicity&quot;, type = &quot;div&quot;, palette = 1) +
+    guides(fill = guide_legend(override.aes=list(shape=21))) + #bug fix
+    scale_alpha(range = c(0.4, 0.8)) + #relative loudness, not absolute due to automatic rescaling
+    scale_edge_color_manual(values = c(neg = brewercolors[[&quot;Red&quot;]], pos = brewercolors[[&quot;Green&quot;]])) +
+    theme_void()
+
+  #save plot to png file for quick rendering
+  ggsave(paste0(&quot;inst/tutorials/Session1/images/breakdyn&quot;, t, &quot;.png&quot;),
+         device = &quot;png&quot;, width = 18, height = 12, units = &quot;cm&quot;, dpi = 200)
+
+}</code></pre>
+</div>
+</div>
+<div id="section-conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>We have:</p>
+<ul>
+<li>Reviewed the basics of regression analysis;</li>
+<li>Learned how to do regression analysis in R;</li>
+<li>Thought about how to measure peer exposure and exposure effects;</li>
+<li>Most importantly, we started thinking about events in networks.</li>
+</ul>
+These are big steps that we have taken! 
 <script type="application/shiny-prerendered" data-context="server-start">
 library(learnr)
 library(tidyverse)
@@ -343,19 +859,9 @@ pupils_dyn <- NikitaRocks::pupils_dyn
 pairs_const <- NikitaRocks::pairs_const
 pairs_dyn <- NikitaRocks::pairs_dyn
 
-#create data files for analyses, so they are available in this tutorial.
-#analyses of loudness at the pupil level (Break 1)
-loudness_average <- pupils_dyn %>%
-  #select loudness cases in Break 1
-  filter(breakID == 1 & !is.na(loudness)) %>%
-  #calculate average loudness level
-  group_by(ID) %>%
-  summarise(avg_loudness = mean(loudness, na.rm = T), .groups = 'drop') %>%
-  #add fixed pupil characteristics
-  full_join(pupils_const) %>%
-  #keep relevant variables
-  select(ID:label, sex:adhd)
-
+#load prepared analysis data sets
+loudness_average <- NikitaRocks::loudness_average
+loudness_events <- NikitaRocks::loudness_events
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
@@ -400,9 +906,51 @@ output$`tutorial-exercise-confint-output` <- renderUI({
   `tutorial-exercise-confint-result`()
 })
 </script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-exposure1-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-exposure1-code-editor`)), session)
+output$`tutorial-exercise-exposure1-output` <- renderUI({
+  `tutorial-exercise-exposure1-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-exposure2-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-exposure2-code-editor`)), session)
+output$`tutorial-exercise-exposure2-output` <- renderUI({
+  `tutorial-exercise-exposure2-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-exposure3-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-exposure3-code-editor`)), session)
+output$`tutorial-exercise-exposure3-output` <- renderUI({
+  `tutorial-exercise-exposure3-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-basicdata1-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-basicdata1-code-editor`)), session)
+output$`tutorial-exercise-basicdata1-output` <- renderUI({
+  `tutorial-exercise-basicdata1-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-basicdata2-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-basicdata2-code-editor`)), session)
+output$`tutorial-exercise-basicdata2-output` <- renderUI({
+  `tutorial-exercise-basicdata2-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-basicdata3-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-basicdata3-code-editor`)), session)
+output$`tutorial-exercise-basicdata3-output` <- renderUI({
+  `tutorial-exercise-basicdata3-result`()
+})
+</script>
  <!--html_preserve-->
 <script type="application/shiny-prerendered" data-context="dependencies">
-{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["header-attrs"]},{"type":"character","attributes":{},"value":["2.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pandoc"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["header-attrs.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap"]},{"type":"character","attributes":{},"value":["3.3.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/bootstrap"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["viewport"]}},"value":[{"type":"character","attributes":{},"value":["width=device-width, initial-scale=1"]}]},{"type":"character","attributes":{},"value":["js/bootstrap.min.js","shim/html5shiv.min.js","shim/respond.min.js"]},{"type":"character","attributes":{},"value":["css/cerulean.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["pagedtable"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pagedtable-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/pagedtable.js"]},{"type":"character","attributes":{},"value":["css/pagedtable.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["textmate.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-format"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmarkdown/templates/tutorial/resources"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-format.js"]},{"type":"character","attributes":{},"value":["tutorial-format.css","rstudio-theme.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["navigation"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/navigation-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tabsets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["default.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["anchor-sections"]},{"type":"character","attributes":{},"value":["1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/anchor-sections"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["anchor-sections.js"]},{"type":"character","attributes":{},"value":["anchor-sections.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["font-awesome"]},{"type":"character","attributes":{},"value":["5.1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/fontawesome"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/all.css","css/v4-shims.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootbox"]},{"type":"character","attributes":{},"value":["4.4.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/bootbox"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["bootbox.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["idb-keyvalue"]},{"type":"character","attributes":{},"value":["3.2.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/idb-keyval"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["idb-keyval-iife-compat.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider"]},{"type":"character","attributes":{},"value":["2.1.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["href"]}},"value":[{"type":"character","attributes":{},"value":["shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/ion.rangeSlider.min.js"]},{"type":"character","attributes":{},"value":["css/ion.rangeSlider.css","css/ion.rangeSlider.skinShiny.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"logical","attributes":{},"value":[true]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["strftime"]},{"type":"character","attributes":{},"value":["0.9.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["href"]}},"value":[{"type":"character","attributes":{},"value":["shared/strftime"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["strftime-min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"logical","attributes":{},"value":[true]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap"]},{"type":"character","attributes":{},"value":["3.4.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["href","file"]}},"value":[{"type":"character","attributes":{},"value":["shared/bootstrap"]},{"type":"character","attributes":{},"value":["www/shared/bootstrap"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["viewport"]}},"value":[{"type":"character","attributes":{},"value":["width=device-width, initial-scale=1"]}]},{"type":"character","attributes":{},"value":["js/bootstrap.min.js","shim/html5shiv.min.js","shim/respond.min.js"]},{"type":"character","attributes":{},"value":["css/bootstrap.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.5.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]}]}
+{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["header-attrs"]},{"type":"character","attributes":{},"value":["2.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pandoc"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["header-attrs.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap"]},{"type":"character","attributes":{},"value":["3.3.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/bootstrap"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["viewport"]}},"value":[{"type":"character","attributes":{},"value":["width=device-width, initial-scale=1"]}]},{"type":"character","attributes":{},"value":["js/bootstrap.min.js","shim/html5shiv.min.js","shim/respond.min.js"]},{"type":"character","attributes":{},"value":["css/cerulean.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["pagedtable"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pagedtable-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/pagedtable.js"]},{"type":"character","attributes":{},"value":["css/pagedtable.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["textmate.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-format"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmarkdown/templates/tutorial/resources"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-format.js"]},{"type":"character","attributes":{},"value":["tutorial-format.css","rstudio-theme.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["navigation"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/navigation-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tabsets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["default.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["anchor-sections"]},{"type":"character","attributes":{},"value":["1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/anchor-sections"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["anchor-sections.js"]},{"type":"character","attributes":{},"value":["anchor-sections.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["font-awesome"]},{"type":"character","attributes":{},"value":["5.1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/fontawesome"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/all.css","css/v4-shims.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootbox"]},{"type":"character","attributes":{},"value":["4.4.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/bootbox"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["bootbox.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["idb-keyvalue"]},{"type":"character","attributes":{},"value":["3.2.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/idb-keyval"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["idb-keyval-iife-compat.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ionrangeslider"]},{"type":"character","attributes":{},"value":["2.1.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["href"]}},"value":[{"type":"character","attributes":{},"value":["shared/ionrangeslider"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/ion.rangeSlider.min.js"]},{"type":"character","attributes":{},"value":["css/ion.rangeSlider.css","css/ion.rangeSlider.skinShiny.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"logical","attributes":{},"value":[true]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["strftime"]},{"type":"character","attributes":{},"value":["0.9.2"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["href"]}},"value":[{"type":"character","attributes":{},"value":["shared/strftime"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["strftime-min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"logical","attributes":{},"value":[true]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap"]},{"type":"character","attributes":{},"value":["3.4.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["href","file"]}},"value":[{"type":"character","attributes":{},"value":["shared/bootstrap"]},{"type":"character","attributes":{},"value":["www/shared/bootstrap"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["viewport"]}},"value":[{"type":"character","attributes":{},"value":["width=device-width, initial-scale=1"]}]},{"type":"character","attributes":{},"value":["js/bootstrap.min.js","shim/html5shiv.min.js","shim/respond.min.js"]},{"type":"character","attributes":{},"value":["css/bootstrap.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["shiny"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["1.5.0"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]}]}
 </script>
 <!--/html_preserve-->
 <!--html_preserve-->
