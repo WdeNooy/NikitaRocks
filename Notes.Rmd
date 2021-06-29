@@ -161,7 +161,7 @@ Data:
 
 Hands-on:
 
-1. (Single level) regression model with prepared exposure variable (minutes played with someone using the gameapp in the preceding break. Inspecting output: interpreting regression coefficients (and residuals?). Demonstration with new game app adoption, additional practice with adoption of expression "wicked smaht" (every break a new episode?) ; Note: assumes constant hazard function, see Afternoon I, Part II.
+1. (Single level) regression model with prepared exposure variable (minutes played with someone using the gameapp in the preceding break. Inspecting output: interpreting regression coefficients (and residuals?). Demonstration with new game app adoption ; Note: assumes constant hazard function, see Afternoon I, Part II.
 
 2. Play with shiny app (TBD?) to inspect ego networks of pupils with small and large residuals. With option to show attributes?
 

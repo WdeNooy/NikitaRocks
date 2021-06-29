@@ -659,7 +659,18 @@ confint(exposure_model1)
 ```
 </div>
 
-## Data preparation
+## Conclusion
+
+We have:
+
+* Reviewed the basics of regression analysis;
+* Learned how to do regression analysis in R;
+* Thought about how to measure peer exposure and exposure effects;
+* Most importantly, we started thinking about events in networks.
+
+These are big steps that we have taken!
+
+## Appendix: Data preparation
 
 As said before, calculating the exposure variables is complicated. In this section, you can see how that can be done.
 
@@ -1072,13 +1083,4 @@ for (t in 1:nrow(timepoints)) {
 }
 ```
 
-## Conclusion
 
-We have:
-
-* Reviewed the basics of regression analysis;
-* Learned how to do regression analysis in R;
-* Thought about how to measure peer exposure and exposure effects;
-* Most importantly, we started thinking about events in networks.
-
-These are big steps that we have taken!

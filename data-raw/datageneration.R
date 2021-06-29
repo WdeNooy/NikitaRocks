@@ -81,7 +81,7 @@ net_friends <- graph_from_data_frame(d = friends[friends$from < friends$to,], ve
 # plot graph with vertex color indicating pupil sex
 colors <- c("tomato", "gold") # select two colors (numbered 1 and 2)
 V(net_friends)$color <- colors[V(net_friends)$sex + 1] #assign colors to sex scores
-l <- layout_with_fr(net_friends) #use Fruchterman-Ringold layout
+l <- layout_with_fr(net_friends) #use Fruchterman-Reingold layout
 plot(net_friends,
      edge.arrow.size=0.4,
      vertex.label.family="Helvetica",
@@ -1716,11 +1716,17 @@ diffusion_data %>%
 #effect of exposure; sqrt() transformation of exposure score has better fit than raw exposure scores
 # linear
 model_diffusion_const_time <- glm(
-  adoption ~ sqrt(exposure),
+  adoption ~ exposure + friends_adopted + sex,
   data = diffusion_data,
   family = binomial(link = "logit")
 )
 summary(model_diffusion_const_time)
+model_diffusion_const_time1 <- glm(
+  adoption ~ sqrt(exposure),
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+summary(model_diffusion_const_time1)
 # linear
 model_diffusion_lin_time <- glm(
   adoption ~ breakID + sqrt(exposure),
@@ -1810,7 +1816,7 @@ save(pairs_dyn, file = "data/pairs_dyn.RData")
 
 # Derived data sets for analysis ####
 
-## Data Session 1 ####
+## Data Sessions 1 and 2 ####
 
 #analyses of loudness at the pupil level (Break 1)
 loudness_average <- pupils_dyn %>%
@@ -1981,6 +1987,107 @@ rm(utterances, addressing_help, playmates_help, cases_help)
 #save to package data directory
 save(loudness_events, file = "data/loudness_events.RData")
 
+## Data Sessions 3 and 4: gameapp adoption ####
+
+#Create helper table of adoption times: first break in which pupil plays with
+# app on their phone.
+# Variable gameapp in pupils_dyn: if 1, pupil played with own game app
+adopters <- pupils_dyn %>%
+  #select gameapp use cases
+  filter(gameapp == 1) %>%
+  #select earliest (minimum) break with game use as adoption break for each pupil
+  group_by(ID) %>%
+  summarise(breakAdopt = min(breakID))
+
+#Create helper table with exposure to gaming peers as time (in minutes) spent
+# with a gaming playmate in the preceding break (can be over 30 minutes if pupil
+# is exposed to more than one gamer at a time).
+exposure <- pairs_dyn  %>%
+  #select the playmate ties in all breaks
+  filter(dyntie == "Playmate") %>%
+  #add information about pupil's activities (including playing the game) from
+  # pupils_dyn
+  # first, ignore the actual playing times and add all activities from pupils_dyn
+  # within a break
+  left_join(
+    pupils_dyn,
+    by = c("to" = "ID", "breakID" = "breakID")
+  ) %>%
+  # second, only keep the activities that overlap in time with playing together
+  # Note: the onset and terminus of playing together are now 'onset.x' and
+  # 'terminus.x', whereas the onset and terminus of the pupil's activities are
+  # now 'onset.y' and 'terminus.y'
+  filter(
+    onset.x < terminus.y & #playing must start before end of pupil's activity
+      terminus.x > onset.y #and playing must end after start of pupil's activity
+  ) %>%
+  # now we have all instances in which playing together and playmate's gaming
+  # overlap
+  #calculate the time overlap
+  mutate(duration =
+           #smallest end time minus
+           ifelse(terminus.x < terminus.y, terminus.x, terminus.y) -
+           #largest starting time
+           ifelse(onset.x > onset.y, onset.x, onset.y)) %>%
+  #sum exposure time for each pupil per break
+  group_by(from, breakID) %>%
+  summarise(exposure = sum(duration, na.rm = T), .groups="drop") %>%
+  #add 1 to breakID: exposure in break 1 must predict adoption in break 2
+  mutate(breakID = breakID + 1)
+
+#Create helper table with number of friends who previously adopted the gaming
+# app for each break.
+friends_adopted <- pairs_const %>%
+  #select all friendships
+  filter(friend == 1) %>%
+  #add the friend's ('to') adoption time (as break number)
+  left_join(adopters, by = c("to" = "ID")) %>%
+  #get rid of friends who never adopted
+  filter(!is.na(breakAdopt)) %>%
+  #calculate (per pupil and break) the number of friends who have adopted per
+  # pupil per break
+  group_by(from, breakAdopt) %>%
+  summarise(friends_adopted = n(), .groups = "drop") %>%
+  #add 1 to breakAdopt: friend's adoption in break 1 must predict adoption in
+  #break 2
+  mutate(breakAdopt = breakAdopt + 1)
+
+#Create the data to predict game app adoption from exposure and other variables
+diffusion_data <- pupils_const %>%
+  #create a case for every pupil-break combination
+  full_join(
+    data_frame(breakID = 1:10), #new data frame: 1 variable, 10 cases, values 1 to 10
+    by = character()
+  ) %>%
+  #add adoption times
+  left_join(adopters, by = "ID") %>%
+  #remove cases for breaks after the adoption break (pupil no longer at risk to adopt)
+  filter(breakID <= breakAdopt | is.na(breakAdopt)) %>%
+  #create dependent variable: 0 for not yet adopted, 1 for adopted
+  mutate(adoption = case_when(
+    breakID == breakAdopt ~ 1,
+    TRUE ~ 0)
+  ) %>%
+  #add exposure score (in preceding break) to pupils (if any)
+  left_join(exposure, by = c("ID" = "from", "breakID" = "breakID")) %>%
+  #set missing exposure values to zero: no exposure
+  mutate(exposure = ifelse(is.na(exposure), 0, exposure)) %>%
+  #add number of friends who adopted previously
+  left_join(friends_adopted, by = c("ID" = "from", "breakID" = "breakAdopt")) %>%
+  #replace missing number of friends who adopted by zero
+  mutate(friends_adopted = ifelse(is.na(friends_adopted), 0, friends_adopted)) %>%
+  # Step 2: in the data (sorted on pupil and break) replace values by the
+  # highest preceding or current value
+  arrange(ID, breakID) %>%
+  group_by(ID) %>%
+  mutate(cum_friends_adopted = cumsum(friends_adopted)) %>%
+  ungroup() %>%
+  # get rid of superfluous variables
+  select(-present, -onset, -terminus)
+# cleanup helper data
+rm(adopters, exposure, friends_adopted)
+#save to package data directory
+save(diffusion_data, file = "data/diffusion_data.RData")
 
 
 # PROBLEM: `ndtv::` (and `networkDynamic::`) ####

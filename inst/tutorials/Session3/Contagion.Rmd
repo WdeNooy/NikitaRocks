@@ -1,0 +1,487 @@
+---
+title: "Session 3. Contagion with logistic regression"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+runtime: shiny_prerendered
+description: >
+   Basics of logistic regression to predict that a pupil has or has not yet adopted a new game app under the influence of peers playing with the app.
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(tidyverse)
+library(knitr)
+library(RColorBrewer) #for colour palettes
+library(lme4) #multilevel models
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Standard colors to use
+brewercolors <- brewer.pal( 5, name =  "Spectral")
+brewercolors[3] <- "#ffff00"
+names(brewercolors) <- c("Red", "Orange", "Yellow", "Green", "Blue")
+#usage: colour = brewercolors["Blue"]
+
+#load basic data
+pupils_const <- NikitaRocks::pupils_const
+pupils_dyn <- NikitaRocks::pupils_dyn
+pairs_const <- NikitaRocks::pairs_const
+pairs_dyn <- NikitaRocks::pairs_dyn
+
+#load prepared analysis data set
+diffusion_data <- NikitaRocks::diffusion_data
+```
+
+<!-- Define programming tip style -->
+<style>
+.tip {
+  background-color: #f5f5f5;
+}
+</style>
+
+<!-- Define question style -->
+<style>
+.question {
+  color: #5A9DDB;
+}
+</style>
+
+## Game app adoption: Yes or No?
+
+In Sessions 1 and 2 we tried to predict pupils' voice loudness from the loudness in their network during a break. Do pupils adjust their voice loudness to the loudness of their current conversation partners, their current playmates, or other pupils on the playground?
+
+In the current session, we want to predict network effects on the adoption of a new game app. Let us call this <i class="question">contagion</i> because it resembles adopting a disease (becoming infected) from contacts with infected people.
+
+```{r}
+# Visualization of the gameapp adoption data used in the analyses.
+
+# Network of pupils in columns according to adoption break (bottom to top; non-adopter in last break) linked by friendship ties with vertex size reflecting exposure to gaming playmates and vertex colour reflecting adoption/not yet adopted.
+
+# Create a table with pupils adoption times for adding to friendships
+# and set the last break (10) as 'adoption time' for non-adopters.
+adoptions <- diffusion_data %>%
+  #for each pupil
+  group_by(ID) %>%
+  #select highest breakID (= break of adoption if pupil is adopter)
+  summarise(last_break = max(breakID))
+# Add a factor with pupils optimally (manually) ordered.
+permutation <- pupils_const %>%
+  mutate(
+    pupil = factor(
+      label,
+      levels = c("Charles", "Terry", "Sameer", "Trevon", "Trei", "Derek", "Hunter",
+                 "Maverick", "Omar", "Dakota", "Sarah",  "Truyen", "Lauren", "Z'Reya", "Angelica",
+                 "Hailey", "Jessica", "Madison", "Judith", "Lily", "Jaimie", "Desiree", "Shnika",
+                 "Cambrie", "Carla", "Zameel")
+    ),
+    order = case_when(
+      label == "Charles" ~ 1, 
+      label == "Terry" ~ 2, 
+      label == "Sameer" ~ 3, 
+      label == "Trevon" ~ 4, 
+      label == "Trei" ~ 5, 
+      label == "Derek" ~ 6, 
+      label == "Hunter" ~ 7, 
+      label == "Maverick" ~ 8, 
+      label == "Omar" ~ 9, 
+      label == "Dakota" ~ 10, 
+      label == "Sarah" ~ 11, 
+      label == "Truyen" ~ 12, 
+      label == "Lauren" ~ 13, 
+      label == "Z'Reya" ~ 14, 
+      label == "Angelica" ~ 15, 
+      label == "Hailey" ~ 16, 
+      label == "Jessica" ~ 17, 
+      label ==  "Madison" ~ 18, 
+      label ==  "Judith" ~ 19, 
+      label ==  "Lily" ~ 20, 
+      label ==  "Jaimie" ~ 21, 
+      label ==  "Desiree" ~ 22, 
+      label ==  "Shnika" ~ 23, 
+      label == "Cambrie" ~ 24, 
+      label ==  "Carla" ~ 25, 
+      label ==  "Zameel" ~ 26
+    )
+  ) %>%
+  #save relevant variables
+  select(ID, pupil, order)
+
+# Create a table of relevant friendships (only between points representing adoption).
+friends_lines <- pairs_const %>%
+  #add adoption break to sender
+  left_join(adoptions, by = c("from" = "ID")) %>%
+  #add adoption break to receiver
+  left_join(adoptions, by = c("to" = "ID")) %>%
+  #add ordered pupil names to sender
+  left_join(permutation, by = c("from" = "ID")) %>%
+  #add ordered pupil names to receiver
+  left_join(permutation, by = c("to" = "ID")) %>%
+  #only keep friendships and one friendship line per pair
+  filter(from < to & friend == 1)
+
+# Apply hierarchical clustering for the optimal order of vertices and create plot
+diffusion_data %>%
+  #add ordered pupil names
+  left_join(permutation, by = c("ID")) %>% 
+  #create plot
+  ggplot() +
+    #friendship ties
+    geom_curve(
+      data = friends_lines,
+      aes(
+        x = order.x,
+        xend = order.y,
+        y = last_break.x,
+        yend = last_break.y
+        ),
+      curvature = 0.2,
+      colour = "darkgrey",
+      size = 0.8
+      ) +
+    #points for all values with white/black color for non/adopter.
+    geom_point(aes(x = pupil, y = breakID, colour = as.factor(adoption), size = exposure), show.legend = FALSE) +
+    #axeslabels
+    labs(subtitle = "Game app adoption (red), exposure (dot size), and friendship ties (grey curves)", x = "", y = "Break") +
+    #set x axis to discrete (to allow placement of lines using integer order numbers)
+    scale_x_discrete() +
+    #adjust Y axis ticks
+    scale_y_continuous(breaks = 1:10, minor_breaks = NULL) +
+    # adoption colours
+    scale_colour_manual(values = c(brewercolors[["Orange"]], brewercolors[["Red"]])) +
+    #setting the overall appearance of the figure
+    theme_bw() +
+    #setting pupil names at an angle for readability  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Cleanup.
+rm(friends_matrix, adoptions, friends_lines, permutation)
+```
+
+This figure summarizes our diffusion data:
+
+* Each pupil (horizontal axis) may adopt the new game app in between breaks (parental approval is required);
+* Once adopted (red dots), a pupil is no longer 'at risk' to adopt (no data for later breaks);
+* Adoption may be triggered because friends have previously adopted the game app (grey lines);
+* Adoption may be triggered by playing with peers who are using the game app (exposure): dot size shows the number of minutes that a pupil played with peers using the game app during the previous break.
+
+<div class="question">
+Exercises
+
+1. What may explain that Omar, Lauren, and Cambrie have adopted the game app in the second break (between the first and second break)?
+2. Why may Derek have adopted the game app before the third break?
+3. Is it surprising that Z'Reya has not yet adopted the game app in the tenth break?
+</div>
+
+## Logistic regression
+
+We want to predict the presence versus absence of a feature (having the new game app) instead of a numerical score like pupil loudness. This requires a different type of regression analysis: <i class="question">logistic regression</i>.
+
+Unfortunately, logistic regression is a bit more complicated than ordinary regression. But it pays off to understand the basics because statistical models of network change (Session 6) are based on models similar to logistic regression. 
+
+### Data for logistic regression
+
+The data relevant to our analyses looks like this (press the little black triangle at the top right to see more variables if not all variables are shown):
+
+```{r diffusion_data}
+diffusion_data %>%
+  select(-ethnicity, -adhd, -friends_adopted)
+```
+
+Variables:
+
+* _ID_: pupil ID;
+* _label_: pupil's first name;
+* _sex_: pupil's sex (`0` = boy, `1` = girl);
+* _breakID_: sequential number of the (school) break;
+* _breakAdopt_: number of break before which the pupil adopted the game app (helper variable);
+* _adoption_: the pupil adopted (`1`) or did not adopt (`0`) the game app before this break;
+* _exposure_: the minutes this pupil played with a pupil who was using the game app in the preceding break (summed over all of the pupil's playmates in this break);
+* _cum_friends_adopted_: total (cumulative) number of the pupil's friends who adopted the game app before the previous break.
+
+Note that we have multiple observations (rows) for pupils. In every break, a pupil was <i class="question">at risk</i> of having adopted the game app. The `adoption` variable registers whether (`1`) or not (`0`) the pupil adopted the game app. 
+
+For example, Hunter did not adopt the game app before the first or second break. He adopted it between the second and third break.
+
+Having adopted the game app before the third break, Hunter is no longer at risk of adopting it. From this point on, he is irrelevant to the question that we want to answer, so there are no observations (rows) for Break 5 and later for him.
+
+<div class="tip">
+With the observations (rows) in our data set, we determine who is (at what time) relevant to answering our research question.
+</div>
+
+<div class="question">
+Exercises
+
+1. If we would want to predict when a pupil starts playing with the game app, what would we do with pupils who haven't installed the app yet?
+
+2. If we would want to predict how long a pupil is playing with the game app, for which situations would we create rows in our data set?
+</div>
+
+### Logistic regression in R
+
+A logistic regression can be executed with the `glm()` function, using:
+
+* A formula specifying the dependent/outcome variable and the independent predictor variables (just like ordinary regression);
+* The name of the data set (just like ordinary regression);
+* And a link function: see the `family` part of the command below (new!).
+
+```{r logreg1, exercise = TRUE, exercise.eval = TRUE}
+# Predict adoption (0/1) from exposure, number of friends who adopted, and pupil's sex.
+model_diffusion <- glm(
+  adoption ~ exposure + cum_friends_adopted + sex, #formula
+  data = diffusion_data,                           #data
+  family = binomial(link = "logit")                #type of regression model: logistic
+)
+# Inspect the results.
+summary(model_diffusion)
+```
+
+The coefficients tell us that exposure (`r format(round(coef(glm(adoption ~ exposure + cum_friends_adopted + sex, data = diffusion_data, family = binomial(link = "logit")))[[2]], digits = 3), nsmall = 3)`) and number of friends who adopted previously(`r format(round(coef(glm(adoption ~ exposure + cum_friends_adopted + sex, data = diffusion_data, family = binomial(link = "logit")))[[3]], digits = 4), scientific = FALSE)`), have a positive effect on adoption. Pupils with more exposure to gaming playmates and/or more friends who have adopted tend to adopt more (quickly).
+
+The effect of sex on adoption is negative (`r format(round(coef(glm(adoption ~ exposure + cum_friends_adopted + sex, data = diffusion_data, family = binomial(link = "logit")))[[4]], digits = 3), nsmall = 3)`), so girls (coded `1`) on average adopt less (quickly) than boys (coded `0`).
+
+But what do these numbers actually mean?
+
+### Interpreting results
+
+In logistic regression, we do <i class="question">not</i> predict that a pupil adopts (`1` for yes) or not (`0`).
+
+Instead, we predict something quite technical, namely, the log odds (also called: <i class="question">logit</i>) of game adoption over no game adoption.
+
+For the lovers of mathematical notation, this is what we predict:
+
+$$log\left(\frac{Pr\left(y = 1\right)}{Pr\left(y=0\right)}\right)$$
+
+The odds of adopting the new game app is the probability ($Pr()$) of adoption (the dependent variable $y$ equals 1) divided by the probability of not adopting (the dependent variable $y$ equals 0).
+
+The (natural) logarithm ($log()$) of the odds is estimated. So the estimated effect of sex (`r format(round(coef(glm(adoption ~ exposure + cum_friends_adopted + sex, data = diffusion_data, family = binomial(link = "logit")))[[4]], digits = 3), nsmall = 3)`) means that the log odds of adoption are on average `r format(abs(round(coef(glm(adoption ~ exposure + cum_friends_adopted + sex, data = diffusion_data, family = binomial(link = "logit")))[[4]], digits = 3)), nsmall = 3)` lower for girls than for boys.
+
+What does this mean? Is it much or little?
+
+Being ordinary people, we cannot make sense of such an interpretation. We prefer to compare the adoption probability for girls and boys.
+
+### 
+
+We can use the `predict()` function to get predicted probabilities.
+
+```{r predict, exercise = TRUE, exercise.eval = TRUE, exercise.lines = 16}
+# Estimate the logistic regression model.
+model_diffusion <- glm(
+  adoption ~ exposure + cum_friends_adopted + sex,
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+# Get predicted adoption probabilities for boys and girls. 
+predict(
+  model_diffusion, #the stored logistic regression results
+  data.frame( #enter the variables and values for which you want predictions:
+    sex = c(0, 1), #zero for boys, one for girls
+    exposure = c(0, 0), #both the boy and girl having 0 exposure...
+    cum_friends_adopted = c(5, 5) #... and 0 friends who already adopted
+  ),
+  type = "response" #gives probabilities not log odds
+)
+```
+
+For boys and girls without exposure and friends who adopted previously, the probability to adopt the game app are `r round(predict(
+  model_diffusion, data.frame(sex = c(0, 1), exposure = c(0, 0), cum_friends_adopted = c(0, 0)),type = "response")[[1]], digits = 2)` and `r round(predict(
+  model_diffusion, data.frame(sex = c(0, 1), exposure = c(0, 0), cum_friends_adopted = c(0, 0)),type = "response")[[2]], digits = 2)`, respectively. Boys are more than twice as likely to adopt the game app than girls. That sounds like a substantial difference.
+
+<div class="question">
+Exercises
+
+1. Modify the code to predict adoption probabilities for boys and girls who score 50 on exposure (a high exposure score that appears among both boys and girls) but who do not have friends who adopted the game app previously. What happens to the probabilities?
+
+2. Modify the code to predict adoption probabilities for boys and girls who have 5 friends who adopted the game app previously but who score 0 on exposure. What happens to the probabilities? What does it tell you about the effect of having adopters among your friends on your adoption probability?
+
+3. Modify the code to predict adoption probabilities for a boy who has no (zero) exposure and a boy who scores 50 on exposure. Both boys do not have friends who adopted the game app previously. What does the result tell you about the effect of exposure to gaming playmates on adoption probability (for boys)?
+
+</div>
+
+### Not multilevel?
+
+After having completed Session 2, you may think that we need a multilevel model because we have repeated measurements for pupils: one measurement (row) for each break in which they are at risk of adopting the game app.
+
+Good thinking!
+
+However, this is an exception. Let us have another look at Hunter's data.
+
+```{r multilevel}
+diffusion_data %>%
+  select(-ethnicity, -adhd, -friends_adopted) %>%
+  filter(label == "Hunter")
+```
+
+We have three rows for Hunter. The dependent/outcome variable is twice `0` and one time `1`. If we calculate the average of these three numbers, we get `0.333` (one third). This is the probability that Hunter adopts.
+
+With a logistic regression model, we predict probabilities. So the three rows for Hunter give us the probability that we need. No need to correct for dependencies within the dependent/outcome variable.
+
+(This is a simplified explanation but it touches the main point.)
+
+## Practice some more
+
+<div class="question">
+Exercises
+
+The data set `diffusion_data` contains a few more variables that you can use to predict the probability to adopt the game app:
+
+* _adhd_: Pupil's ADHD score level.
+* _friends_adopted_: The number of friends who adopted the game app in the previous break (instead of all friends who adopted previously).
+
+1. Adjust the below code to predict game app adoption from different combinations of (old and new) predictors. Tip: Every predictor must be included in the `predict()` command.
+
+```{r logregextra, exercise = TRUE, exercise.lines = 18}
+# Predict adoption (0/1) from exposure, number of friends who adopted, and pupil's sex.
+model_diffusion <- glm(
+  adoption ~ exposure + cum_friends_adopted + sex, #formula
+  data = diffusion_data,                           #data
+  family = binomial(link = "logit")                #type of regression model: logistic
+)
+# Inspect the results.
+summary(model_diffusion)
+# Get predicted adoption probabilities for boys and girls. 
+predict(
+  model_diffusion, #the stored logistic regression results
+  data.frame( #enter the variables and values for which you want predictions:
+    sex = c(0, 1), #zero for boys, one for girls
+    exposure = c(0, 0), #both the boy and girl having 0 exposure...
+    cum_friends_adopted = c(5, 5) #... and 0 friends who already adopted
+  ),
+  type = "response" #gives probabilities not log odds
+)
+```
+
+2. Use the `confint()` function to get the confidence intervals of the effects in the models that you estimate under Exercise 1. When are we sure about the direction (positive/negative) of the effect and when are we not?
+
+</div>
+
+## Conclusion
+
+We learned the basics of predicting presence versus absence of a characteristic among the pupils in our study.
+
+This characteristic was adopting (versus not adopting) a new game app. It could also have been the adoption of a cultural behavior, acquiring a disease, or making a positive versus a negative statement (to be discussed in Session 5).
+
+Perhaps surprisingly, it can also be the presence versus absence of a network tie, like friendship, being playmates, choosing a conversation partner, and so on. In other words, we can predict network structure with this kind of model (Session 6). 
+
+Logistic regression is like ordinary regression except that:
+
+* We cannot directly interpret the effect sizes; we must change them into probabilities first, for example, adoption probability for boys versus adoption probability for girls;
+* The probabilities change for different values of other independent/predictor variables in our model, for example, the adoption probabilities for boys and girls are different for pupils with high exposure than for pupils with low exposure.
+
+## Further Reading
+
+- Rogers, E. M. (1962). _Diffusion of Innovations_ (4th ed.). Free Press. The classic text on the diffusion of innovations through networks. 
+
+- Valente, T. W. (1995). _Network Models of the Diffusion of Innovations_. Hampton Press. offers a more recent and accessible overview.
+
+- Centola, D. (2018). _How Behavior Spreads: The Science of Complex Contagions_. Princeton University Press. Presents an influential perspective on (analysing) contagion through networks.
+
+- For thorough understanding of logistic regression, study: Hosmer, D. W., Lemeshow, S., & Sturdivant, R. X. (2013). _Applied Logistic Regression_ (3rd ed. or later). Wiley.
+
+## Appendix: Data preparation
+
+As always, it is not easy to calculating the exposure variables (number of friends who have adopted the game app; time with playmates using the game app). In this section, you can see how that can be done.
+
+This is an advanced topic that you should probably only study if you start working with your own data.
+
+```{r calculate, eval=FALSE, echo=TRUE}
+#Create the data for analyzing gameapp adoption.
+
+#Create helper table of adoption times: first break in which pupil plays with
+# app on their phone.
+# Variable gameapp in pupils_dyn: if 1, pupil played with own game app
+adopters <- pupils_dyn %>%
+  #select gameapp use observations
+  filter(gameapp == 1) %>%
+  #select earliest (minimum) break with game use as adoption break for each pupil
+  group_by(ID) %>%
+  summarise(breakAdopt = min(breakID))
+
+#Create helper table with exposure to gaming peers as time (in minutes) spent
+# with a gaming playmate in the preceding break (can be over 30 minutes if pupil
+# is exposed to more than one gamer at a time).
+exposure <- pairs_dyn  %>%
+  #select the playmate ties in all breaks
+  filter(dyntie == "Playmate") %>%
+  #add information about pupil's activities (including playing the game) from
+  # pupils_dyn
+  # first, ignore the actual playing times and add all activities from pupils_dyn
+  # within a break
+  left_join(
+    pupils_dyn,
+    by = c("to" = "ID", "breakID" = "breakID")
+  ) %>%
+  # second, only keep the activities that overlap in time with playing together
+  # Note: the onset and terminus of playing together are now 'onset.x' and
+  # 'terminus.x', whereas the onset and terminus of the pupil's activities are
+  # now 'onset.y' and 'terminus.y'
+  filter(
+    onset.x < terminus.y & #playing must start before end of pupil's activity
+      terminus.x > onset.y #and playing must end after start of pupil's activity
+  ) %>%
+  # now we have all instances in which playing together and playmate's gaming
+  # overlap
+  #calculate the time overlap
+  mutate(duration =
+           #smallest end time minus
+           ifelse(terminus.x < terminus.y, terminus.x, terminus.y) -
+           #largest starting time
+           ifelse(onset.x > onset.y, onset.x, onset.y)) %>%
+  #sum exposure time for each pupil per break
+  group_by(from, breakID) %>%
+  summarise(exposure = sum(duration, na.rm = T), .groups="drop") %>%
+  #add 1 to breakID: exposure in break 1 must predict adoption in break 2
+  mutate(breakID = breakID + 1)
+
+#Create helper table with number of friends who previously adopted the gaming
+# app for each break.
+friends_adopted <- pairs_const %>%
+  #select all friendships
+  filter(friend == 1) %>%
+  #add the friend's ('to') adoption time (as break number)
+  left_join(adopters, by = c("to" = "ID")) %>%
+  #get rid of friends who never adopted
+  filter(!is.na(breakAdopt)) %>%
+  #calculate (per pupil and break) the number of friends who have adopted per
+  # pupil per break
+  group_by(from, breakAdopt) %>%
+  summarise(friends_adopted = n(), .groups = "drop") %>%
+  #add 1 to breakAdopt: friend's adoption in break 1 must predict adoption in
+  #break 2
+  mutate(breakAdopt = breakAdopt + 1)
+
+#Create the data to predict game app adoption from exposure and other variables
+diffusion_data <- pupils_const %>%
+  #create a case for every pupil-break combination
+  full_join(
+    data_frame(breakID = 1:10), #new data frame: 1 variable, 10 observations, values 1 to 10
+    by = character()
+  ) %>%
+  #add adoption times
+  left_join(adopters, by = "ID") %>%
+  #remove observations for breaks after the adoption break (pupil no longer at risk to adopt)
+  filter(breakID <= breakAdopt | is.na(breakAdopt)) %>%
+  #create dependent variable: 0 for not yet adopted, 1 for adopted
+  mutate(adoption = case_when(
+    breakID == breakAdopt ~ 1,
+    TRUE ~ 0)
+  ) %>%
+  #add exposure score (in preceding break) to pupils (if any)
+  left_join(exposure, by = c("ID" = "from", "breakID" = "breakID")) %>%
+  #set missing exposure values to zero: no exposure
+  mutate(exposure = ifelse(is.na(exposure), 0, exposure)) %>%
+  #add number of friends who adopted previously
+  left_join(friends_adopted, by = c("ID" = "from", "breakID" = "breakAdopt")) %>%
+  #replace missing number of friends who adopted by zero
+  mutate(friends_adopted = ifelse(is.na(friends_adopted), 0, friends_adopted)) %>%
+  # Step 2: in the data (sorted on pupil and break) replace values by the
+  # highest preceding or current value
+  arrange(ID, breakID) %>%
+  group_by(ID) %>%
+  mutate(cum_friends_adopted = cumsum(friends_adopted)) %>%
+  ungroup() %>%
+  # get rid of superfluous variables
+  select(-present, -onset, -terminus)
+```
+
