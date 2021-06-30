@@ -670,6 +670,11 @@ We have:
 
 These are big steps that we have taken!
 
+## Further Reading
+
+- Miles, J., & Shevlin, M. (2001). _Applying regression & correlation: A guide for students and researchers_. SAGE. My favorite introduction to regression analysis, especially __Part I: I Need To Do Regression Analysis Tomorrow__.
+
+
 ## Appendix: Data preparation
 
 As said before, calculating the exposure variables is complicated. In this section, you can see how that can be done.

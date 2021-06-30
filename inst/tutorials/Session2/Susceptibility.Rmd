@@ -357,3 +357,10 @@ Multilevel models:
 * But can even be much more complex with, for example, pupils nested within classes, nested within schools, nested within countries;
 * Give better estimates and confidence intervals with clustered data;
 * And will pop up again later in this course.
+
+## Further Reading
+
+- Twisk, J. W. R. (2006). _Applied Multilevel Analysis. A Practical Guide_. Cambridge University Press. A relatively easy introduction to multilevel analysis.
+
+- Aral, S., & Walker, D. (2012). Identifying Influential and Susceptible Members of Social Networks. _Science_, 337(6092), 337–341. A clever experiment to estimate both susceptibility and influence of people within a social etwork.
+

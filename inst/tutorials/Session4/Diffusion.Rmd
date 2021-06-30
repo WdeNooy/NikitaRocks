@@ -1,0 +1,483 @@
+---
+title: "Session 4. Diffusion"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+runtime: shiny_prerendered
+description: >
+   Basics of a discrete-time event history model (using logistic regression) to model the diffusion a new game app. Does adoption depend on time?
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(tidyverse)
+library(knitr)
+library(RColorBrewer) #for colour palettes
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Standard colors to use
+brewercolors <- brewer.pal( 5, name =  "Spectral")
+brewercolors[3] <- "#ffff00"
+names(brewercolors) <- c("Red", "Orange", "Yellow", "Green", "Blue")
+#usage: colour = brewercolors["Blue"]
+
+#load basic data
+pupils_const <- NikitaRocks::pupils_const
+pupils_dyn <- NikitaRocks::pupils_dyn
+pairs_const <- NikitaRocks::pairs_const
+pairs_dyn <- NikitaRocks::pairs_dyn
+
+#load prepared analysis data set
+diffusion_data <- NikitaRocks::diffusion_data
+```
+
+<!-- Define programming tip style -->
+<style>
+.tip {
+  background-color: #f5f5f5;
+}
+</style>
+
+<!-- Define question style -->
+<style>
+.question {
+  color: #5A9DDB;
+}
+</style>
+
+## Game app adoption: A matter of time?
+
+In Session 3 we tested whether the adoption of a new game app depends on previous adoption by friends and game app use by playmates. 
+
+```{r}
+# Visualization of the gameapp adoption data used in the analyses.
+
+# Create a table with pupils adoption times for adding to friendships
+# and set the last break (10) as 'adoption time' for non-adopters.
+adoptions <- diffusion_data %>%
+  #for each pupil
+  group_by(ID) %>%
+  #select highest breakID (= break of adoption if pupil is adopter)
+  summarise(last_break = max(breakID))
+# Add a factor with pupils optimally (manually) ordered.
+permutation <- pupils_const %>%
+  mutate(
+    pupil = factor(
+      label,
+      levels = c("Charles", "Terry", "Sameer", "Trevon", "Trei", "Derek", "Hunter",
+                 "Maverick", "Omar", "Dakota", "Sarah",  "Truyen", "Lauren", "Z'Reya", "Angelica",
+                 "Hailey", "Jessica", "Madison", "Judith", "Lily", "Jaimie", "Desiree", "Shnika",
+                 "Cambrie", "Carla", "Zameel")
+    ),
+    order = case_when(
+      label == "Charles" ~ 1, 
+      label == "Terry" ~ 2, 
+      label == "Sameer" ~ 3, 
+      label == "Trevon" ~ 4, 
+      label == "Trei" ~ 5, 
+      label == "Derek" ~ 6, 
+      label == "Hunter" ~ 7, 
+      label == "Maverick" ~ 8, 
+      label == "Omar" ~ 9, 
+      label == "Dakota" ~ 10, 
+      label == "Sarah" ~ 11, 
+      label == "Truyen" ~ 12, 
+      label == "Lauren" ~ 13, 
+      label == "Z'Reya" ~ 14, 
+      label == "Angelica" ~ 15, 
+      label == "Hailey" ~ 16, 
+      label == "Jessica" ~ 17, 
+      label ==  "Madison" ~ 18, 
+      label ==  "Judith" ~ 19, 
+      label ==  "Lily" ~ 20, 
+      label ==  "Jaimie" ~ 21, 
+      label ==  "Desiree" ~ 22, 
+      label ==  "Shnika" ~ 23, 
+      label == "Cambrie" ~ 24, 
+      label ==  "Carla" ~ 25, 
+      label ==  "Zameel" ~ 26
+    )
+  ) %>%
+  #save relevant variables
+  select(ID, pupil, order)
+
+# Create a table of relevant friendships (only between points representing adoption).
+friends_lines <- pairs_const %>%
+  #add adoption break to sender
+  left_join(adoptions, by = c("from" = "ID")) %>%
+  #add adoption break to receiver
+  left_join(adoptions, by = c("to" = "ID")) %>%
+  #add ordered pupil names to sender
+  left_join(permutation, by = c("from" = "ID")) %>%
+  #add ordered pupil names to receiver
+  left_join(permutation, by = c("to" = "ID")) %>%
+  #only keep friendships and one friendship line per pair
+  filter(from < to & friend == 1)
+
+# Apply hierarchical clustering for the optimal order of vertices and create plot
+diffusion_data %>%
+  #add ordered pupil names
+  left_join(permutation, by = c("ID")) %>% 
+  #create plot
+  ggplot() +
+    #friendship ties
+    geom_curve(
+      data = friends_lines,
+      aes(
+        x = order.x,
+        xend = order.y,
+        y = last_break.x,
+        yend = last_break.y
+        ),
+      curvature = 0.2,
+      colour = "darkgrey",
+      size = 0.8
+      ) +
+    #points for all values with white/black color for non/adopter.
+    geom_point(aes(x = pupil, y = breakID, colour = as.factor(adoption), size = exposure), show.legend = FALSE) +
+    #axeslabels
+    labs(subtitle = "Game app adoption (red), exposure (dot size), and friendship ties (grey curves)", x = "", y = "Break (time point since game app launch)") +
+    #set x axis to discrete (to allow placement of lines using integer order numbers)
+    scale_x_discrete() +
+    #adjust Y axis ticks
+    scale_y_continuous(breaks = 1:10, minor_breaks = NULL) +
+    # adoption colours
+    scale_colour_manual(values = c(brewercolors[["Orange"]], brewercolors[["Red"]])) +
+    #setting the overall appearance of the figure
+    theme_bw() +
+    #setting pupil names at an angle for readability  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Cleanup.
+rm(friends_matrix, adoptions, friends_lines, permutation)
+```
+
+Let us assume that the game app was promoted by a huge advertisement campaign in the media just before the first break for which we collected our data.
+
+In Session 3, we ignored the time it takes a new product like the game app to be accepted by pupils (and their parents, who have to consent to installing it). Some pupils (and parents) are more open to the new product (early adopters), others tend to wait and have to negotiate longer.
+
+Compare this to becoming ill from an infection. Once a virus enters your body, it starts to multiply. It takes some time before the virus bothers your body so much that you start feeling ill.
+
+Probably, the from-infection-to-illness process is the same for all human beings. But the process can be faster and the illness more profound for some people than for other people.
+
+Epidemiologists try to predict the speed of the process. Which characteristics of a person (age, having a good immune system, being vaccinated) tend to go together with low speed of becoming ill? Does the speed become so low for some people that they do not show illness symptoms at all?
+
+This brings us to a class of models called <i class="question">event history models</i>, which are often used to model the diffusion of innovations.
+
+## Hazards
+
+The advertisement campaign (before Break 1) starts the event history clock. From this moment every pupil is at risk of adopting the new game app.
+
+Event history models analyze <i class="question">hazards</i>. The hazard of experiencing an event is the probability to experience the event if you have not yet experienced it in the current episode. The people who have not experienced the event yet constitute the <i class="question">risk set</i>.
+
+```{r}
+# Visualization of the gameapp adoption data used in the analyses.
+
+# Create a table with pupils adoption times for adding to friendships
+# and set the last break (10) as 'adoption time' for non-adopters.
+adoptions <- diffusion_data %>%
+  #for each pupil
+  group_by(ID) %>%
+  #select highest breakID (= break of adoption if pupil is adopter)
+  summarise(last_break = max(breakID))
+# Add a factor with pupils optimally (manually) ordered.
+permutation <- pupils_const %>%
+  mutate(
+    pupil = factor(
+      label,
+      levels = c("Charles", "Terry", "Sameer", "Trevon", "Trei", "Derek", "Hunter",
+                 "Maverick", "Omar", "Dakota", "Sarah",  "Truyen", "Lauren", "Z'Reya", "Angelica",
+                 "Hailey", "Jessica", "Madison", "Judith", "Lily", "Jaimie", "Desiree", "Shnika",
+                 "Cambrie", "Carla", "Zameel")
+    ),
+    order = case_when(
+      label == "Charles" ~ 1, 
+      label == "Terry" ~ 2, 
+      label == "Sameer" ~ 3, 
+      label == "Trevon" ~ 4, 
+      label == "Trei" ~ 5, 
+      label == "Derek" ~ 6, 
+      label == "Hunter" ~ 7, 
+      label == "Maverick" ~ 8, 
+      label == "Omar" ~ 9, 
+      label == "Dakota" ~ 10, 
+      label == "Sarah" ~ 11, 
+      label == "Truyen" ~ 12, 
+      label == "Lauren" ~ 13, 
+      label == "Z'Reya" ~ 14, 
+      label == "Angelica" ~ 15, 
+      label == "Hailey" ~ 16, 
+      label == "Jessica" ~ 17, 
+      label ==  "Madison" ~ 18, 
+      label ==  "Judith" ~ 19, 
+      label ==  "Lily" ~ 20, 
+      label ==  "Jaimie" ~ 21, 
+      label ==  "Desiree" ~ 22, 
+      label ==  "Shnika" ~ 23, 
+      label == "Cambrie" ~ 24, 
+      label ==  "Carla" ~ 25, 
+      label ==  "Zameel" ~ 26
+    )
+  ) %>%
+  #save relevant variables
+  select(ID, pupil, order)
+
+# Create a table of relevant friendships (only between points representing adoption).
+friends_lines <- pairs_const %>%
+  #add adoption break to sender
+  left_join(adoptions, by = c("from" = "ID")) %>%
+  #add adoption break to receiver
+  left_join(adoptions, by = c("to" = "ID")) %>%
+  #add ordered pupil names to sender
+  left_join(permutation, by = c("from" = "ID")) %>%
+  #add ordered pupil names to receiver
+  left_join(permutation, by = c("to" = "ID")) %>%
+  #only keep friendships and one friendship line per pair
+  filter(from < to & friend == 1)
+
+# Hazards (as fractions) for all breaks.
+hazards <- diffusion_data %>%
+  #proportion of adoptions at each break
+  group_by(breakID) %>%
+  summarise(hazard = paste0(sum(adoption == 1), "/", n()))
+
+# Apply hierarchical clustering for the optimal order of vertices and create plot
+diffusion_data %>%
+  #add ordered pupil names
+  left_join(permutation, by = c("ID")) %>% 
+  #create plot
+  ggplot() +
+    #friendship ties
+    geom_curve(
+      data = friends_lines,
+      aes(
+        x = order.x,
+        xend = order.y,
+        y = last_break.x,
+        yend = last_break.y
+        ),
+      curvature = 0.2,
+      colour = "darkgrey",
+      size = 0.8
+      ) +
+    #points for all values with white/black color for non/adopter.
+    geom_point(aes(x = pupil, y = breakID, colour = as.factor(adoption), size = exposure), show.legend = FALSE) +
+    #axeslabels
+    labs(subtitle = "Game app adoption (red), exposure (dot size), and friendship ties (grey curves)", x = "", y = "Break (time point since game app launch)") +
+    #set x axis to discrete (to allow placement of lines using integer order numbers)
+    scale_x_discrete() +
+    #adjust Y axis ticks
+    scale_y_continuous(
+      breaks = 1:10, minor_breaks = NULL,
+      sec.axis = dup_axis(name = "Hazard: proportion at risk who adopt", labels = hazards$hazard)
+      ) +
+    # adoption colours
+    scale_colour_manual(values = c(brewercolors[["Orange"]], brewercolors[["Red"]])) +
+    #setting the overall appearance of the figure
+    theme_bw() +
+    #setting pupil names at an angle for readability  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Cleanup.
+rm(friends_matrix, adoptions, friends_lines, permutation)
+```
+
+<div class="question">
+Exercise
+
+1. Explain how the hazard is calculated for Break 4. How does the calculation include the risk set and exclude pupils who have experienced the event before.
+</div>
+
+In the last break for which we have data, pupil Z'Reya still has not adopted the game app. From the event history perspective, the adoption process may still be going on for her. Perhaps, she is still negotiating with her parents or saving money to buy the game app.
+
+Z'Reya is an example of a <i class="question">right-censored</i> observation. One of the strong points of event history models is that they handle right-censored cases correctly. Event history models do not assume that Z'Reya will never adopt. Perhaps she will!
+
+## Baseline hazard function
+
+We are interested in adoption as a time process. How does the hazard of adopting the game app change over time? 
+
+Evidence from marketing suggests that a new product initially has few adopters  (early-adopters), then many adopters (early/late majority), and finally few customers who take a long time to adopt (laggards). If openness to new products is a general personality trait, we may expect such a pattern also for the adoption of the new game app by our pupils.
+
+We usually do not have theory or previous research telling us the exact shape of the baseline hazard function. Instead, we estimate it from our data: 
+
+* Independent/predictor variable: Time (break number);
+* Dependent/outcome variable: Hazard (adoption probability for pupils who haven't adopted yet).
+
+```{r baselineplot}
+#time functions
+model_diffusion.none <- glm(
+  adoption ~ 1, #no time predictor, only constant
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+model_diffusion.quadratic <- glm(
+  adoption ~ breakID + I(breakID^2), #time and time squared for a parabola (curve)
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+#collect observed and (average) predicted baseline functions and graph them
+diffusion_data %>%
+  #calculate observed probability as proportion of adoptions per break
+  group_by(breakID) %>%
+  summarise(obs_prop = mean(adoption)) %>%
+  #add predictioned hazards with constant and quadratic functions of time
+  bind_cols(
+    lin_prop = predict(model_diffusion.none, newdata = data.frame(breakID = 1:10), type = "response"),
+    quad_prop = predict(model_diffusion.quadratic, newdata = data.frame(breakID = 1:10), type = "response")
+  ) %>%
+  #plot
+  ggplot(aes(x = breakID)) +
+    geom_step(aes(y = obs_prop), color = "darkgrey", size = 1.5) +
+    geom_line(aes(y = lin_prop), color = "black") +
+    geom_line(aes(y = quad_prop), color = "blue") +
+    scale_x_continuous(name = "Break (time point since game app launch)", breaks = 1:10, minor_breaks = NULL) +
+    labs(y = "Hazard") +
+    theme_bw()
+
+```
+
+This figure shows <i class="question">baseline hazard functions</i>, that is, how hazards change over time (breaks):
+
+* Dark gray lines: hazards that we observe in our data (see previous figure). Small hazards for early adopters (Breaks 1 & 2), large hazards for majority.
+* Blue curve: Predicted hazards as a quadratic function of time (breaks).
+* Horizontal black line: predicted hazard if time does not play a role.
+
+Note that the risk set is very small after Break 4,containing  only 3 pupils. A proportion of adopters calculated on a small number tends to be extreme: very low or very high. Don't take such a proportion too seriously.
+
+<div class="question">
+Exercise
+
+1. Can you recognize the early adopters, (early/late) majority, and laggards in this figure?
+</div>
+
+## Estimating the baseling hazard function
+
+We can use logistic regression to estimate a baseline hazard function. 
+
+Remember a hazard is:
+
+* The adoption probability: We learned to estimate this with logistic regression in Session 3;
+* For pupils who have not adopted yet: We only included observations (rows) in our data set for pupils who did not adopt in a previous break.
+
+```{r baselineEstimate, exercise = TRUE, exercise.eval = TRUE, exercise.lines = 35}
+# Estimate adoption from time (variable: breakID).
+model1 <- glm(
+  adoption ~ 1, #no time predictor, only constant
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+model2 <- glm(
+  adoption ~ breakID + I(breakID^2), #time and time squared for a parabola (curve)
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+
+# Collect observed and (average) predicted baseline functions and graph them.
+hazards <- diffusion_data %>%
+  #calculate observed probability as proportion of adoptions per break
+  group_by(breakID) %>%
+  summarise(obs_prop = mean(adoption)) %>%
+  #add columns (variables) with the predicted hazards for models 1 and 2
+  # note that breakID is the only independent/predictor variable in the models
+  bind_cols(
+    model1_hazards = predict(model1, newdata = data.frame(breakID = 1:10), type = "response"),
+    model2_hazards = predict(model2, newdata = data.frame(breakID = 1:10), type = "response")
+  )
+
+# Plot the observed and predicted hazard functions.
+ggplot(data = hazards, aes(x = breakID)) +
+  #observed hazards:
+  geom_step(aes(y = obs_prop), color = "darkgrey", size = 1.5) +
+  #hazards predicted by model 1:
+  geom_line(aes(y = model1_hazards), color = "black") +
+  #hazards predicted by model 2:
+  geom_line(aes(y = model2_hazards), color = "blue") +
+  scale_x_continuous(name = "Break (time point since game app launch)", breaks = 1:10, minor_breaks = NULL) +
+  labs(y = "Hazard") +
+  theme_bw()
+```
+
+<div class="question">
+Exercises
+
+1. Replace Model 1 by a linear effect of time (use only `breakID` as predictor). Is this baseline hazard function intuitively plausible?
+2. Replace Model 1 by a quartic effect of time (use `breakID`, `I(breakID^2)`, `I(breakID^3)`, and `I(breakID^4)` as predictors). Is this baseline hazard function intuitively more or less plausible than the quadratic baseline function?
+</div>
+
+## Predicting adoption process speed
+
+The baseline hazard function represents the speed at which the game app is adopted by pupils over time. Does a pupil's sex, exposure to playmates using the game app, or friends who adopted the game app previously speed up (or slow down) the adoption process?
+
+Just add predictors to the logistic regression model used to estimate the baseline hazard function.
+
+```{r predictors, exercise = TRUE}
+# Estimate adoption from time (variable: breakID) and substantive predictor(s).
+model <- glm(
+  adoption ~ breakID + I(breakID^2) + sex,
+  data = diffusion_data,
+  family = binomial(link = "logit")
+)
+
+# Numerical summary of results.
+summary(model)
+
+# Predict hazards for two types of pupils.
+hazards <- data.frame(
+    breakID = 1:10,
+    hazards1 = predict(model, newdata = data.frame(breakID = 1:10, sex = rep(0, 10)), type = "response"),
+    hazards2 = predict(model, newdata = data.frame(breakID = 1:10, sex = rep(1, 10)), type = "response")
+  )
+
+# Plot the predicted hazard functions.
+ggplot(data = hazards, aes(x = breakID)) +
+  geom_line(aes(y = hazards1), color = "black") +
+  geom_line(aes(y = hazards2), color = "blue") +
+  scale_x_continuous(name = "break (time point since game app launch)", breaks = 1:10, minor_breaks = NULL) +
+  labs(y = "hazard") +
+  theme_bw()
+```
+
+<div class="question">
+Exercises
+
+1. Interpret the numerical output and plot. What do they tell you?
+
+2. Add the variable `exposure` as a predictor to the model and plot predicted hazard functions for boys with zero exposure and boys who score 50 on `exposure`. Tip: Adjust both the formula in the `glm()` function and the `data.frame()` argument in the `predict()` functions (see Session 3).
+
+3. Change the baseline hazard function, for example, to no time effect or a quartic time function (see the previous topic in this session).
+</div>
+
+## Overfitting the baseline hazard function
+
+The typical adoption process of few early adopters, many majority adopters, and few laggards may be due to personal adoption propensities as marketeers tend to assume. 
+
+However, it may also result from network effects such as contagion or peer influence. At first, we have few adopters. Each of them influence some peers to adopt, and so on, yielding a snowballing effect of increasing numbers of adopters and an increasingly smaller risk set of pupils who can still adopt.
+
+When we estimate the baseline hazard function from the data, it can be hard to distinguish between time and network effects in small samples. The time effect (hazard function) may incorporate part of the network effects because it is too much tailored to the data (<i class="question">overfitted</i>).
+
+It is better to have a larger sample, several samples (adoption of the same game app in several classes), and preferably adoption processes of several innovations or products by the same participants. With several adoption processes within the same network, a multilevel model can tease out the personal adoption propensities (as we learned in Session 2). 
+
+## Conclusion
+
+Event history models make us reflect on the role of time in the diffusion or network processes that we are studying.
+
+The two important questions are:
+
+1. Do you have a starter event that puts the people that you study at risk of experiencing the phenomenon that you want to predict? This moment may vary across people.
+2. If so, do you theorize a(n adoption) process that is basically the same for all people but that can be faster/slower for some?
+
+If your answers are Yes, an event history model may be what you are looking for.
+
+This session only discusses a <i class="question">discrete-time event history model</i>. Here, we have a limited number of time points at which events may happen. In our example, adoption of the game app can only happen between breaks and we do not care (and have no information on) when it exactly happens.
+
+If we have the (more or less) precise time at which an event happens, for example, because server data tell us in which second a person sent a chat message, we need a <i class="question">continuous-time event history model</i>. These models cannot be estimated with logistic regression. They are a bit ore complex but the basic ideas remain the same.
+
+## Further Reading
+
+- Rogers, E. M. (1962). _Diffusion of Innovations_ (4th ed.). Free Press. The classic text on the diffusion of innovations through networks. 
+
+- Valente, T. W. (1995). _Network Models of the Diffusion of Innovations_. Hampton Press. offers a more recent and accessible overview.
+
+- Singer, J. D., & Willett, J. B. (2003). _Applied Longitudinal Data Analysis. Modeling Change and Event Occurrence_. Oxford University Press. Part II of this book offers an elaborate but accessible discussion of event history models.
