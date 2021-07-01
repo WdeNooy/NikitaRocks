@@ -1,11 +1,22 @@
 Package: NikitaRocks
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Tutorials on Statistical Models for Events Within Networks
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Wouter de Nooy
+Maintainer: TWouter de Nooy <w.denooy@uva.nl>
+Description: Six tutorials on regression models for analyzing events within networks (longitudina data): peer influence, susceptibility, contagion, diffusion, tie valence, and tie creation.
+    Develped for the St Petersburg Summer School on Network Analysis, 2021.
+License: AGPL-3
 Encoding: UTF-8
 LazyData: true
+Depends: 
+    R (>= 4.0),
+    learnr, 
+    tidyverse,
+    knitr, 
+    RColorBrewer
+Imports: 
+    shiny,
+    ggraph,
+    lme4
+RoxygenNote: 7.1.1

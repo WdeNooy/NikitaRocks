@@ -48,1042 +48,195 @@ utterances <- NikitaRocks::utterances
 </style>
 
 
-## What do pupils do during a break?
+## <INTRO>
 
-We have (fictional) data on what 26 pupils are doing during a 30 minutes break.
-
-The below network picture shows part of this information:
-
-1. Pupil's sex and ethnicity: node shape and color.
-2. Friendships: fat gray lines.
-3. Playing together: thin black lines.
-4. Voice use: the blue circles, the louder, the darker (less transparent).
-5. Saying something to someone else: green (positive utterance) and red (negative utterance) arrows.
-
-```{r}
-# first part of the app: the User Interface (ui)
-fluidPage(
-  verticalLayout(
-    imageOutput("image"), #plotOutput("netplot"),
-    wellPanel(
-      sliderInput("slider", label = NULL, min = 1, max = 531,
-                  value = 1, step = 1, ticks = FALSE, 
-                  animate = animationOptions(interval = 300)
-                  )
-    )
-  )
-)
-```
-
-```{r, context="server"}
-# second part of the app: the R code
-# show prepared image
-  output$image <- renderImage({
-# # create a plot named netplot to be shown in the output
-#   output$netplot <- renderPlot({
-#     plot(visual_break1[[input$slider]])
-    filename <- normalizePath(file.path('./images',
-                              paste('breakdyn', input$slider, '.png', sep='')))
-    return(list(src = filename,
-         contentType = "image/png",
-         width = 600, #seems to be standard image width in embedded shiny
-         height = 400
-         # alt = "This is alternate text"
-         ))
-
-  }, deleteFile = FALSE)
-```
-
-What we want to know:
-
-* How do they act?
-* When do they act?
-* Towards whom do they act?
-
-Eyeballing the evolving network does not give us easy answers to these questions. There is just too much information. Let us use statistical analysis to answer these questions. 
-
-## Regression essentials
-
-If we apply statistical analysis, we basically believe:
-
-* that we can measure characteristics (<i class="question">variables</i>) of different objects (<i class="question">cases</i>, <i class="question">units</i>);
-* that we can compare these measurements;
-* that systematic differences between measurements are meaningful.
-
-For example, we believe that we can measure and compare voice loudness, pupil's sex, and pupil's ADHD score.
-
-```{r regresAggregated, out.width='50%', fig.show='hold', fig.asp=1}
-# Two scatterplots predicting average loudness from sex and ADHD score.
-# calculate predictions (means) for boys and girls
-predictor_sex <- loudness_average %>%
-  group_by(sex) %>%
-  summarise(sex_avg = round(mean(avg_loudness), digits = 3)) %>%
-  pull(sex_avg)
-ggplot(loudness_average, 
-       aes(x = sex, y = avg_loudness)
-       ) +
-  geom_jitter(
-    aes(color = adhd, shape = as.factor(sex)),
-    width = 0.05,
-    height = 0,
-    size = 3,
-    show.legend = FALSE
-    ) +
-  geom_hline(aes(yintercept = predictor_sex[1]),
-             linetype = "dashed" ) +
-  geom_hline(aes(yintercept = predictor_sex[2])) +
-  geom_smooth(method = "lm", se = FALSE, color = brewercolors["Blue"]) +
-  geom_segment(
-    x = 1, xend = 1, y = predictor_sex[1],
-    yend = predictor_sex[2],
-    arrow = arrow(length = unit(0.1, "inches"), type = "open"),
-    color = brewercolors["Red"],
-    size = 2
-  ) +
-  geom_text(
-    x = 1, y = predictor_sex[2] - 0.05,
-    label = paste0("mean difference =\n effect of sex (b)\n", predictor_sex[2] , "- ",
-                    predictor_sex[1], " = ", predictor_sex[2] - predictor_sex[1]),
-    color = brewercolors["Red"],
-    vjust = 1,
-    hjust = 1,
-    size = 6
-  ) +
-  geom_text(aes(
-    label = label
-    ),
-    check_overlap = TRUE,
-    hjust = ifelse(loudness_average$sex == 0, 0, 1),
-    nudge_x = ifelse(loudness_average$sex == 0, 0.1, -0.1),
-    colour = "darkgrey"
-  ) +
-  scale_x_continuous(
-    name = "Pupil's sex",
-    breaks = c(0, 1),
-    labels = c("Boys", "Girls")
-  ) +
-  scale_y_continuous(
-    name = "Average loudness of a pupil",
-    breaks = c(round(predictor_sex[2], digits = 3), 
-               round(predictor_sex[1], digits = 3))
-  ) +
-  scale_shape_manual(values = c(15, 16)) +
-  theme_classic(base_size = 22)
-
-# scatterplot for effect of adhd on loudness
-# calculate predicted loudness values for adhd scores 2 and 3
-predictor_adhd <- round(predict(lm(avg_loudness ~ adhd, data = loudness_average), newdata = data.frame(adhd = c(2, 3))), digits = 3)
-#create plot
-ggplot(loudness_average, 
-       aes(x = adhd, y = avg_loudness)
-       ) +
-  geom_point(
-    aes(shape = as.factor(sex)),
-    show.legend = FALSE,
-    alpha = 0.4,
-    size = 3
-    ) +
-  geom_hline(aes(yintercept = predictor_adhd[1]),
-             linetype = "dashed" ) +
-  geom_hline(aes(yintercept = predictor_adhd[2])) +
-  geom_segment(
-    x = 3, xend = 3, y = predictor_adhd[1],
-    yend = predictor_adhd[2],
-    arrow = arrow(length = unit(0.1, "inches"), type = "open"),
-    color = brewercolors["Red"],
-    size = 2
-  ) +
-  geom_segment(
-    x = 2, xend = 3, y = predictor_adhd[1],
-    yend = predictor_adhd[1],
-    arrow = arrow(length = unit(0.1, "inches"), type = "open"),
-    color = "black",
-    size = 2
-  ) +
-  geom_text(
-    x = 3, y = predictor_adhd[2] - 0.05,
-    label = paste0("change for +1 ADHD =\n effect of ADHD (b)\n", predictor_adhd[2] , "- ",
-                    predictor_adhd[1], " = ", predictor_adhd[2] - predictor_adhd[1]),
-    color = brewercolors["Red"],
-    vjust = 1,
-    hjust = 0.5,
-    size = 6
-  ) +
-  geom_smooth(method = "lm", se = FALSE, color = brewercolors["Blue"]) +
-  scale_x_continuous(
-    name = "A pupil's ADHD score",
-    breaks = 0:6
-  ) +
-  scale_y_continuous(
-    name = "",
-    breaks = predictor_adhd,
-    labels = round(predictor_adhd, digits = 3)
-  ) +
-  scale_shape_manual(values = c(15, 16)) +
-  theme_classic(base_size = 22)
-```
-
-Each of the above plots compares pupil's average voice loudness to a background characteristic of the pupil: pupil's sex (left) and ADHD score (right).
-
-If we want to predict average voice loudness, we call this the <i class="question">dependent</i> or <i class="question">outcome</i> variable. Variables that we use to predict (sex, ADHD score) are called <i class="question">independent</i> or <i class="question">predictor</i> variables.
-
-Sex is measured with two categories: 
-
-* boys (coded `0`) with average loudness score `r predictor_sex[1]` (on a loudness scale from 0 to 1);
-* girls (coded `1`), average loudness score is `r predictor_sex[2]`. 
-
-If we look for systematic differences, we compare the mean (average) scores between boys and girls. 
-
-We call the difference between the two means (`r predictor_sex[2] - predictor_sex[1]`) the <i class="question">effect</i> of sex on loudness. Girls are slightly less loud than boys during this break.
-
-ADHD score is measured on a scale from 0 to 7. 
-
-For systematic differences in loudness, we look at the consequences of a one unit change in ADHD: 
-
-* at ADHD score 2, the predicted voice loudness (blue line) is `r predictor_adhd[1]`;
-* at ADHD score 3, the predicted voice loudness (blue line) is `r predictor_adhd[2]`.
-
-A one unit increase in ADHD scores predicts that voice loudness increases by `r predictor_adhd[2] - predictor_adhd[1]`.
-
-Is this a lot? 
-
-* The maximum adhd difference is around 6: if we compare a pupil with ADHD score 6 to another pupil who scores 0;
-* maximum difference in predicted voice loudness is around 6 times `r predictor_adhd[2] - predictor_adhd[1]` = `r 6 * (predictor_adhd[2] - predictor_adhd[1])`;
-* this is about one quarter of the loudness scale (from 0 to 1);
-* is this a lot?
-
-The straight blue lines in the plots are called <i class="question">regression lines</i>.
-
-How do we get a regression line?
-
-```{r}
-#cleanup predicted values
-rm(predictor_sex)
-rm(predictor_adhd)
-```
-
-## Ordinary regression in R
-
-If the variable that we want to predict is numerical (real numbers, not a set of category codes), we can use the `lm()` function to estimate a regression line (regression model).
-
-If you are new to R, take a moment to read the code below. In green, you see comments, which are not executed. Use `#` to create a comment.
-
-The two black lines do the real work. The first black line executes a regression analysis (using `lm()` with `avg_loudness` as outcome left of `~` and `adhd` as predictor right of `~`) and stores (`<-`) the results in a data object called `my_first_model`. The second black line shows a summary of the results.
-
-Now run the code and inspect the results.
-
-```{r regression, exercise = TRUE}
-# Estimate a regression model with lm() and save the results in my_first_model.
-# Use the data set loudness_average, which contains variables:
-# - ID: pupil's ID (sequential) number,
-# - label: pupil's  name,
-# - avg_loudness: pupil's average voice loudness during the break,
-# - sex: pupil's sex
-# - ethnicity: : pupil's ethnicity,
-# - adhd: pupil's ADHD score.
-# R is case-sensitive!
-
-# Estimate the regression model and store it as my_first_model.
-my_first_model <- lm(avg_loudness ~ adhd, data = loudness_average)
-# Show the stored results with the summary() function.
-summary(my_first_model)
-```
-
-If you run this code, you get a lot of numbers.
-
-* Look at the table of coefficients,
-* spot the row with `adhd`,
-* look at the number under `Estimate` in this row (<i class="question">the unstandardized regression coefficient</i>, _b_);
-* this is the effect of ADHD on voice loudness.
-* Didn't we see this number before?
-* What was the meaning of this number?
-
-<div class="question">
-Excercises
-
-1. Change the code to estimate the effect of sex on voice loudness. Interpret the coefficient of sex.
-2. Change the code to estimate the effect of both sex and ADHD score on voice loudness. Tip: Literally add a second predictor using the `+` sign.
-</div>
-
-## Statistical significance
-
-```{r}
-summary(lm(avg_loudness ~ sex + adhd, data = loudness_average))
-```
-
-In the summary of a regression model, you encounter the column `Pr(>|t|)`:
-
-* which gives the so-called <i class="question">p value</i> of a statistical test on the estimated effect;
-* if this value is below .05, the test is statistically significant,
-* as indicated by the stars.
-
-Statistical significance is the most popular and probably worst understood concept in statistics.
-
-* A <i class="question">significant</i> effect does NOT mean that there is a substantive or substantially interesting effect.
-* An <i class="question">insignificant</i> effect does NOT mean that there is no effect.
-
-So what does it mean?
-
-## Confidence intervals
-
-For understanding the significance test, we can look at the <i class="question">confidence interval</i> of an effect. 
-
-```{r confint, exercise = TRUE}
-# Again, estimate a regression model with lm() and save the results in my_second_model.
-my_second_model <- lm(avg_loudness ~ sex + adhd, data = loudness_average)
-# Use function confint() to get the confidence intervals of the effects.
-confint(my_second_model, level = 0.95)
-```
-
-* We usually look at the 95% confidence interval;
-* `confint()` gives us the lower limit (column `2.5 %`) and upper limit (column `97.5 %`) of the interval
-* that contains 'plausible values' for the effect
-* in the population
-* from which our data were randomly sampled.
-
-The plausible values for the effect of sex on voice loudness:
-
-* range from `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[2,1], digits = 2)` to `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[2,2], digits = 2)`;
-* so the effect can be negative and positive;
-* girls can score on average lower (negative effect) or higher (positive effect) than boys;
-* this effect was not statistically significant.
-
-The plausible values for the effect of ADHD score on voice loudness:
-
-* range from `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[3,1], digits = 3)` to `r round(confint(lm(avg_loudness ~ sex + adhd, data = loudness_average))[3,2], digits = 3)`;
-* so we are confident that the effect is positive;
-* higher ADHD score predicts louder voices, not voices that are less loud;
-* this effect was statistically significant.
-
-<div class="tip">
-So, the meaning of statistical significance:
-
-* if an effect is statistically significant, we are confident that we know the direction (sign) of the effect: Predicted (outcome) values either increase or decrease for higher predictor levels;
-* if an effect is NOT statistically significant, we are NOT confident that we know the direction (sign) of the effect.
-</div>
-
-## Exposure to loud peers
-
-A pupil can be loud at some moments and not so loud on other moments during a break. So let us not analyze average loudness of a pupil over the entire break. Instead, let us analyze all events in which pupils raise their voices.
-
-<div class="tip">
-Analysis goal: 
-If a pupil raises their voice at a particular moment (the event), we want to predict voice loudness (the dependent/outcome variable).
-</div>
-
-Let us have a look at the network at time 2:12 during the break. Truyen is clearly louder than, for example, Dakota or Hailey (remember: the darker/more opaque a blue circle, the louder). Why would that be? Can we predict (or explain) this?
-
-```{r out.width='600px'}
-#show network snapshot at timepoint 29 (Truyen acting).
-include_graphics(normalizePath(file.path('./images', 'breakdyn29.png')))
-```
-
-Truyen is playing with Shrika and Desiree (black lines), both of whom are also talking. Truyen is talking with Desiree in a friendly tone (mutual green arrows), whereas Shrika seems to be having an argument with Hunter (mutual red arrows).
-
-Here, voice loudness seems to depend:
-
-1. not just on stable characteristics of the speaker (<i class="question">node attributes</i>): sex, ethnicity, ADHD score,
-2. also on loudness of other pupils,
-3. and the (current) relations with other pupils: playing together, being addressed (positively or negatively), and perhaps friendship, or merely being together.
-
-The combination of points 2 and 3 is generally called <i class="question">network exposure</i>: 
-
-* due to your current relation with a peer (e.g., playmate, being together on the playground)
-* who has a particular characteristic (e.g., speaks at a particular volume),
-* you are aware of that characteristic
-* and (more) likely to respond to it (e.g., adjust your own volume).
-
-## Measuring exposure
-
-Constructing predictor variables like exposure is a challenge in the analysis of events within social networks. How should we measure exposure?
-
-For each time a pupil uses their voice, we need one and only one score that reflects the exposure to other peers' voices at or before that moment.
-
-We must choose:
-
-1. a <i class="question">time window</i>: How far back do we include preceding events in the network, e.g., utterances by other pupils?
-2. an <i class="question">aggregation function</i>: Several peers may have produced events (spoke) and each peer may have produced more than one event, how do we combine these in one exposure score? And do we take into account non-events, e.g., peers who did not use their voice?
-3. a <i class="question">subdivision by type of relation</i>: How do we take into account the current relation(s) between pupil and peers?
-
-If we want to predict the loudness of Truyen's utterance at time 2:12 (red in the below figure), we have to look at the utterances occurring beforehand. The figure shows the utterances (blue bars), Truyen's playmate ties (grey rectangles), and addressees of utterances (arrows, green indicates positive utterances) over time.
-
-```{r fig.asp=0.5}
-#display time by pupil plot with segments indicating voice use with loudness size/colour-coded
-#up to and including time 29 (last entry is event to be explained).
-
-#first, extract playing together and speaking to each other for Truyen, Desiree, and Shnika
-# for plot annotation
-interactions <- pairs_dyn %>%
-  #extract ties between Truyen (22), Desiree (17), and Shnika (15) before timepoint 29 (time 2.19)
-  filter (
-    breakID == 1 & #only ties in first break
-    onset < 2.19 &
-    from %in% c(22, 17, 15) & #both sender...
-    to %in% c(22, 17, 15) & #and receiver must be one of the three pupils
-    (dyntie == "Utterance" | from < to) #only keep one playmate case per pair
-  ) %>%
-  #add pupil names, so names can be used in the plot
-  left_join(pupils_const[, c("ID", "label")], by = c("from" = "ID")) %>%
-  left_join(pupils_const[, c("ID", "label")], by = c("to" = "ID")) %>% 
-  #set max terminus to 2.18 and create factor for labels
-  mutate(
-    terminus = ifelse(terminus > 2.19, 2.19, terminus),
-    label.x = factor(
-      label.x,
-      levels = c("Desiree", "Truyen", "Shnika", "Hunter", "Hailey", "Dakota", "Maverick",
-                 "Carla", "Lily", "Judith", "Zameel")),
-    label.y = factor(
-      label.y,
-      levels = c("Truyen", "Desiree", "Shnika", "Hunter", "Hailey", "Dakota", "Maverick",
-                 "Carla", "Lily", "Judith", "Zameel"))
-    ) %>%
-  # select and rename relevant variables
-  select(from = label.x, to = label.y, onset, terminus, dyntie, negative)
-
-#now, construct loudness data and create the plot
-pupils_dyn %>% #contains loudness with onset and terminus
-  #keep loudness cases (utterances) before timepoint 29 = time 2.19
-  filter(!is.na(loudness) & onset < 2.20) %>% 
-  #set terminus to 2.22 for utterances that are ongoing at timepoint 30
-  #  and mark the event to be explained
-  group_by(ID) %>%
-  mutate(
-    terminus = case_when(
-      terminus > 2.19 & onset < 2.19 ~ 2.19, #events not to be explained
-      terminus > 2.19 ~ 2.23, #event to be explained
-      TRUE ~ terminus #utterances ended before 2.19
-    ),
-    lastonset = max(onset, n = 1),
-    showloudness = ifelse(
-      onset > 1.19 & #show only for utterances in the 1-minute time window..
-      onset == lastonset & #..and only for a pupil's last utterance..
-      ID != 22, #..but not for Truyen
-      TRUE, FALSE
-    ),
-    explanandum = ifelse(terminus > 2.19, "2", "0")
-  ) %>%
-  ungroup() %>%
-  #add pupil names from pupils_const
-  left_join(pupils_const, by = "ID") %>%
-  #keep relevant variables
-  select(label, onset = onset.x, terminus = terminus.x, loudness, explanandum, showloudness) %>% 
-  #reorder pupils to highlight network relations
-  mutate(
-    label = factor(
-      label,
-      levels = c("Truyen", "Desiree", "Shnika", "Hunter", "Hailey", "Dakota", "Maverick",
-                 "Carla", "Lily", "Judith", "Zameel")
-    )
-  ) %>%
-  #create plot
-  ggplot() +
-    #add utterances (to have pupils in correct order)
-    geom_segment(
-      aes(
-        x = onset, xend = terminus,
-        y = label, yend = label
-      ),
-      alpha = 0 #hidden
-    ) +
-    #add playmate boxes
-    geom_rect(
-      data = interactions[interactions$dyntie == "Playmate",],
-      aes(
-        xmin = onset, xmax = terminus,
-        ymin = from, ymax = to
-      ),
-      colour = NA,
-      fill = "black",
-      alpha = 0.2
-    ) +
-    #add utterances
-    geom_segment(
-      aes(
-        x = onset, xend = terminus,
-        y = label, yend = label,
-        size = loudness,
-        colour = explanandum
-      )
-    ) +
-    #add utterance loudness score
-    geom_text(
-      aes(
-        x = 0.5 * (onset + terminus),
-        y = label,
-        label = round(loudness, digits = 3),
-        alpha = ifelse(showloudness, 1, 0)
-      ),
-      colour = "white",
-      size = 2,
-      show.legend = FALSE
-    ) +
-    #add utterance destination and negativity
-    geom_segment(
-      data = interactions[interactions$dyntie == "Utterance",],
-      aes(
-        x = onset + 0.02, xend = onset + 0.02,
-        y = from, yend = to,
-        colour = as.character(negative + 1)
-      ),
-      arrow = arrow(length = unit(0.15, "inches")),
-      size = 2,
-      show.legend = FALSE
-    ) +
-    #add time window: only last/ongoing utterances
-    geom_rect(
-      xmin = 2.12, xmax = 2.19,
-      ymin = 1.5, ymax = 6.5,
-      fill = NA,
-      colour = "black",
-      linetype = "dashed",
-      size = 0.7
-    ) +
-    #add time window: only last minute
-    geom_rect(
-      xmin = 1.19, xmax = 2.19,
-      ymin = 1.5, ymax = 7.5,
-      fill = NA,
-      colour = "black",
-      linetype = "dashed",
-      size = 0.7
-    ) +
-    #add time window: all preceding utterances
-    geom_rect(
-      xmin = 0, xmax = 2.19,
-      ymin = 1.5, ymax =11.5,
-      fill = NA,
-      colour = "black",
-      linetype = "dashed",
-      size = 0.7
-    ) +
-    #add labels to time windows
-    geom_text(
-      x = 2.10,
-      y = 6.5,
-      label = "only ongoing utterances",
-      hjust = 1, 
-      size = 3
-    ) +
-    #add labels to time windows
-    geom_text(
-      x = 2.17,
-      y = 7.75,
-      label = "all in preceding minute",
-      hjust = 1,
-      vjust = 0, 
-      size = 3
-    ) +
-    #add labels to time windows
-    geom_text(
-      x = 2.17,
-      y = 11,
-      label = "all preceding utterances",
-      hjust = 1, 
-      size = 3
-    ) +
-    scale_colour_manual(values = c(brewercolors[["Blue"]], brewercolors[["Green"]], brewercolors[["Red"]]), guide = "none") +
-    scale_x_continuous(
-      name = "Time",
-      breaks = c(0, 1.19, 2.19),
-      labels = c("0:00", "1:12", "2:12"),
-      limits = c(0, 2.25)
-      ) +
-    scale_y_discrete(
-      name = ""
-    ) +
-    guides(size = guide_legend(override.aes=list(colour=brewercolors[["Blue"]]))) +
-    theme_classic()
-
-#cleanup
-rm(interactions)
-```
-
-Ad 1, <i class="question">time window</i>: Three possible time windows are indicated by dashed boxes. The longer the time window, the more utterances (by more pupils) are included in the calculation of exposure.
-
-Ad 2, <i class="question">aggregation function</i>: We can use (among others) the mean, last, maximum, or minimum loudness of all utterances within the selected time window. In addition, we can calculate a weighted mean, weighing recent utterances more strongly than distant utterances.
-
-Ad 3, a <i class="question">subdivision by type of relation</i>: If we want to know whether loudness of playmates or conversation partners is more important to a speaker's loudness, we must create separate exposure variables for loudness of conversation partners, playmates, and peers who are neither of the two.
-
-<div class="tip">Example: Truyen's exposure as the average value of the loudness of each pupil's last utterance in the preceding minute subdivided by loudness of conversation partners, playmates, and other pupils.
-
-Exposure variables and Truyen's score on these:
-
-* Exposure to loudness of conversation partners = Desiree's loudness in her last utterance before 2:12. Desiree is the only pupil who said something to Truyen in the preceding minute, so her last utterance counts.
-* Exposure to loudness of playmates = the average loudness of Desiree and Shnika's last utterances.
-* Exposure to loudness of other pupils = the average loudness of the last utterances by Hunter, Hailey, Dakota, and Maverick.</div>
-
-## Estimating exposure effects
-
-The data set *loudness_events* contains several exposure variables:
-
-Window: only current voices.
-
-1. expo_last_max: The loudest voice at the moment a pupil starts an utterance.
-2. expo_last_mean: The average sound level at the moment a pupil starts an utterance.
-3. expo_last_min: The softest voice at the moment a pupil starts an utterance.
-
-Window: all voices in the last minute.
-
-4. expo_minute_max_playmate: The loudest voice of playmates' last utterances in the preceding minute. 
-5. expo_minute_max_conversation: The loudest voice of conversation partners' last utterances in the preceding minute. 
-6. expo_minute_max_other: The loudest voice of all other pupils' last utterances in the preceding minute. 
-
-Note: If a pupil does not have a playmate or conversation partner, playmate or conversation partner exposure is set to the average of the variable during the break.
 
 <div class="question">
 Exercises
 
-1. Use the data set *loudness_events* to estimate a regression model predicting pupils' loudness (variable `loudness`) from the loudest voice at the moment a pupil starts an utterance (variable `expo_last_max`), pupil's sex (variable `sex`) and adhd score (variable `adhd`). Interpret the confidence interval of the exposure effect.
-
-```{r exposure1, exercise = TRUE}
-# Estimate the model: Enter the variables and data set!
-exposure_model1 <- lm( ~ , data = )
-# Show confidence intervals of the effects.
-confint(exposure_model1)
-```
-
-2. Replace the exposure variable `expo_last_max` by `expo_last_mean` (the average sound level at the moment a pupil starts an utterance). How does the exposure effect change? Which exposure variable has a more convincing effect?
-
-```{r exposure2, exercise = TRUE, exercise.lines = 5}
-# Copy & paste previous code and change what is necessary?
-
-```
-
-3. Estimate a regression model predicting pupils' loudness (variable `loudness`) from the exposure to voices in the preceding minute separated by type of relation: voices of current playmates (variable: `expo_minute_max_playmate`), current conversation partners (variable: `expo_minute_max_conversation`), and other pupils (variable: `expo_minute_max_other`). Also include pupil's sex and adhd score. Interpret the confidence intervals of the three exposure effects. Which effect is most convincing?
-
-```{r exposure3, exercise = TRUE, exercise.lines = 5}
-# Copy & paste previous code and change what is necessary.
-
-```
+1. 
 </div>
 
 ## Conclusion
 
-We have:
 
-* Reviewed the basics of regression analysis;
-* Learned how to do regression analysis in R;
-* Thought about how to measure peer exposure and exposure effects;
-* Most importantly, we started thinking about events in networks.
-
-These are big steps that we have taken!
 
 ## Further Reading
 
-- Miles, J., & Shevlin, M. (2001). _Applying regression & correlation: A guide for students and researchers_. SAGE. My favorite introduction to regression analysis, especially __Part I: I Need To Do Regression Analysis Tomorrow__.
-
+- 
 
 ## Appendix: Data preparation
 
-As said before, calculating the exposure variables is complicated. In this section, you can see how that can be done.
-
 This is an advanced topic that you should probably only study if you start working with your own data.
 
-This tutorial uses the tidyverse approach to data wrangling (preparation). Study the book [R for Data Science](https://r4ds.had.co.nz/) if you are not familiar with this type of R code.
+Once you master reading the R code, you can see the exact way variables have been measured. You may want to change this. For example, take into account all utterances in the preceding 3 or 5 minutes instead of only the last.
 
-### Basic data
+```{r utterancesConstruct, eval=FALSE, echo=TRUE}
+# Construct data set utterances with utterance valence (variable `negative`) as
+# dependent/outcome variable and different types of independent/predictor
+# variables:
+# - Pupil-specific characteristics of the speaker and addressee: sex and ADHD
+#   level;
+# - Similarities in characteristics of the speaker and addressee: sex,
+#   ethnicity, and ADHD level similarity;
+# - Ties between speaker and addressee: friendship and currently playing together.
+# - Network effects of previous utterances: reciprocity and structural balance.
 
-With events within networks, we usually have four data sets:
+# Helper table: playmate ties between pupils (for checking if utterance is
+# between playmates).
+playmates_dyn <- pairs_dyn %>%
+  #select only playmate tied in Break 1
+  filter( dyntie == "Playmate" & breakID == 1 ) %>%
+  #only keep relevant variables (and rename onset and terminus)
+  select(from, to, onset_play = onset, terminus_play = terminus)
 
-1. A data set with characteristics of the network nodes (here: pupils) that do not change, such as sex and ADHD level. In our case, this data set is called `pupils_const`. It contains one row for each pupil.
-
-2. A data set with characteristics of the network nodes (here: pupils) that may change, such as voice loudness. In our case, this data set is called `pupils_dyn`. It contains one row for each time that an event happens for a pupil, for example, one row for each time pupils raise their voices. It also contains the timing of the event: onset (`start`) and end (`terminus`).
-
-3. A data set with characteristics of the network links (here: links between pairs of pupils) that do not change, such as friendship ties. In our case, this data set is called `pairs_const`. It contains one row for each pair of pupils, with the sender of the tie (`from`) and the receiver (`to`). In our data, friendship is a symmetrical relation, so if A is friend with B, there is both a row with A as sender and B as receiver and a row with B as sender and A receiver.
-
-4. A data set with characteristics of the network links (here: links between pairs of pupils) that may change, such as playmate ties. In our case, this data set is called `pairs_dyn`. Just like `pairs_const`, it contains one row for each pair of pupils, with the sender of the tie (`from`) and the receiver (`to`).
-
-<div class="question">
-Exercises
-
-1. Inspect the variables and cases of the data set `pupils_const`. Do they fit the above description? 
-
-```{r basicdata1, exercise = TRUE, exercise.eval = TRUE}
-# Check out the variables in a data set with the str() function (str = structure).
-str(pupils_const)
-```
-
-```{r basicdata2, exercise = TRUE, exercise.eval = TRUE}
-# View the first few lines of data with print() or head().
-head(pupils_const)
-```
-
-```{r basicdata3, exercise = TRUE}
-# If you want to see a description of the data, use the help function.
-?pupils_const
-```
-
-2. Change the above code to inspect the other three data sets.
-</div>
-
-### Calculating exposure variables
-
-Every row in the `pupils_dyn` data set (with a value for `loudness`) represents a pupil using their voice. We want to predict the loudness of the voice, which is our dependent/outcome variable.
-
-We want to predict it from the loudness of preceding voices, so we must select the preceding voice events (within the chose time window) and calculate exposure scores. 
-
-The code below does the trick. As you can see, it is not simple.
-
-```{r calculate1, eval=FALSE, echo=TRUE}
-# data preparation for analyzing loudness at the event level with several
-# exposure variables.
-# first create a helper data frame only containing utterances in Break 1
-utterances <- pupils_dyn %>%
-  #select utterances in Break 1
+# Helper table: utterances received by speaker from addressee (for reciprocity
+# effect).
+received_utterance <- pairs_dyn %>%
+  #select only utterances (not playmate ties) in Break 1
+  filter( dyntie == "Utterance" & breakID == 1 ) %>%
+  #keep relevant variables
+  select(from, to, onset, terminus, negative) %>%
+  #add all utterances with speaker and addressee reversed to each utterance
+  left_join(pairs_dyn, by = c("from" = "to", "to" = "from")) %>%
+  #select only utterances where the end time of the received utterance (in Break
+  #1) is at most 3 minutes before the start of the original utterance
   filter(
-    breakID == 1 & #only events in Break 1
-    !is.na(loudness)
-  ) %>%
-  #drop the superfluous variables
-  select(-onset.censored, -terminus.censored, -gameapp, -breakID)
-# next, create a helper data frame containing playmates and utterance addressees in Break 1
-playmates_help <- pairs_dyn %>%
-  #keep relations in Break 1 and only playmates
-  filter(breakID == 1 & dyntie == "Playmate") %>%
-  #remove superfluous variables
-  select(-breakID, -onset.censored, -terminus.censored, -negative)
-addressing_help <- pairs_dyn %>%
-  #keep relations in Break 1 and utterances
-  filter(breakID == 1 & dyntie == "Utterance") %>%
-  #remove superfluous variables
-  select(-breakID, -onset.censored, -terminus.censored, -dyntie)
-# then, create a helper data frame with all last utterances of peers for all
-# utterances to be predicted
-cases_help <- utterances %>%
-  #link every utterance to all utterances
-  #BEWARE: can create a very large intermediary data frame
-  full_join(utterances, by = character()) %>%
-  #select only joined (second) utterances that happened in the minute
-  # preceding the utterance to be predicted (first utterance)
-  # because our longest window is 1 minute
-  filter(
-    onset.y < onset.x & #the second utterance must have started before the first..
-    onset.y >= onset.x - 1 & #..but not longer ago than 1 minute (onset is measured in minutes)
-    ID.x != ID.y #don't use utterances by the pupil of the utterance to be predicted
-  ) %>%
-  #add valence of incoming relations between pupil (ID.x) and peer (ID.y)
-  # note that the pairs is reversed: 
-  # - an utterance from peer to pupil is linked to the (pupil,peer) pair,
-  # - so we have incoming utterances linked to the pupil
-  # - variable negative (!is.na) identifies incoming utterances among all utterances of peers
-  left_join(
-    addressing_help, 
-    by = c("ID.x" = "to", "ID.y" = "from", "onset.y" = "onset", "terminus.y" = "terminus")
+    terminus.y < onset.x & #received utterance must end before start new utterance
+    onset.x - terminus.y <= 3 & #but not more than three minutes
+    breakID == 1 & #added utterance must be in Break 1
+    dyntie == "Utterance" #and be an utterance (not playmate tie)
     ) %>%
-  #add playmate relations (ignore timing)
-  left_join(
-    playmates_help,
-    by = c("ID.x" = "from", "ID.y" = "to")
+  #for every original utterance, keep the last received utterance
+  # Step 1: sort utterances (identified by from & to & onset.x) by time of
+  # received utterance (terminus.y)
+  arrange(from, to, onset.x, terminus.y) %>%
+  # Step 2: for each (original utterance), keep the valence score of the last
+  # (in time closest) received utterance
+  group_by(from, to, onset.x) %>%
+  summarise(valence_received = last(negative.y), .groups = "drop") %>%
+  #rename onset.x
+  rename(onset = onset.x)
+
+# Helper files for analyzing the effects of structural balance: the number of
+# balanced semicycles (of length 3) created by a negative utterance and the
+# number created by a positive utterance, using the last utterances among pupils
+# that started in the preceding 5 minutes.
+# Create a table of all utterances with negativity recoded to -1 versus +1.
+help_utterances  <- pairs_dyn %>%
+  #select only utterances (not playmate ties) in Break 1
+  filter( dyntie == "Utterance" & breakID == 1 ) %>%
+  #recode negativity score (assuming no missing values)
+  mutate(negative = ifelse(negative == 0, 1, -1)) %>%
+  #keep relevant variables
+  select(from, to, onset, terminus, negative)
+# Symmetrize this table: add all utterances in the reverse direction.
+help_utterances <- help_utterances %>%
+  #exchange sender and receiver
+  rename(to = from, from = to) %>%
+  #add to original table (result is symmetric)
+  bind_rows(help_utterances)
+#construct semipaths of length 2, add them to utterances, and count them
+semi_paths <- help_utterances %>%
+  #join with itself: addressee of first utterance is speaker of second utterance
+  full_join(help_utterances, by = c("to" = "from")) %>%
+  #calculate valence of remaining semipaths (this is why negativity had to be
+  #recoded)
+  mutate(sign = negative.x * negative.y) %>%
+  #keep (and rename) relevant variables
+  select(from, via = to, to = to.y, onset_path1 = onset.x, onset_path2 = onset.y, sign) %>%
+  #drop all (closed) semipaths from a pupil back to herself and all semipaths
+  #spanning more than 5 minutes
+  filter(
+    from != to, #start pupil is not equal to end pupil
+    abs(onset_path1 - onset_path2) <= 5 #absolute difference 5 minutes or less
+    ) %>%
+  #add semipaths to all utterances (and playmate ties, to be dropped later)
+  right_join(pairs_dyn, by = c("from" = "from", "to" = "to")) %>%
+  #keep utterances in Break 1 and semipaths starting in the preceding 5 minutes
+  filter(
+    dyntie == "Utterance" & #must be an utterance (not playmate tie)
+    breakID == 1 & #in Break 1 and
+    onset_path1 < onset & #first step in semipath must start before start new utterance
+    onset - onset_path1 <= 5 & #but not more than five minutes
+    onset_path2 < onset & #second step in semipath must start before start new utterance
+    onset - onset_path2 <= 5 #but not more than five minutes
   ) %>%
-  #add indicator whether or notpupil and peer are current playmates
+  #for each utterance, keep the chronologically last semipath per in-between
+  #(`via`), that is, using only the last utterance between speaker and
+  #in-between and between addressee and in-between
+  # Step 1: sort on utterance and time of utterances via in-between
+  arrange(from, to, onset, onset_path1, onset_path2) %>%
+  # Step 2: retain the last observation (row) per in-between (`via`)
+  group_by(from, to, onset, via) %>%
+  summarise(sign = last(sign), .groups = "drop") %>%
+  #count number of negative and positive semipaths per utterance
+  group_by(from, to, onset) %>%
+  summarise(
+    balance_neg = sum(sign == -1), #number of semipaths with negative sign
+    balance_pos = sum(sign == 1), #number of semipaths with positive sign
+    .groups = "drop"
+    )
+
+# Construct the analysis data set.
+utterances <- pairs_dyn %>%
+  #select only utterances (not playmate ties) in Break 1
+  filter( dyntie == "Utterance" & breakID == 1 ) %>%
+  #create a variable indicating that the utterance addresses a current playmate:
+  # Step 1: add all playmate ties between speaker and addressee to each utterance
+  left_join(playmates_dyn,  by = c("from" = "from", "to" = "to")) %>%
+  # note: every utterance appears at last once, possibly more than once if
+  # speaker and addressee played more than once together
+  # Step 2: create a variable indicating whether speaker and addressee were
+  # playing together at the time the speaker started saying something to
+  # addressee
+  mutate(playmates = ifelse(
+    is.na(onset_play) | #speaker and addressee did not play together in Break 1 or...
+    onset < onset_play | #utterance started before playing together or ...
+    onset > terminus_play, #utterance started after the end of playing together then ...
+    0, 1) #assign score zero, otherwise score 1
+    ) %>%
+  # Step 3: keep only one observation (row) for each utterance with the highest
+  # value of the playmates variable (only retain relevant variables)
+  group_by(from, to, breakID, onset, terminus, negative) %>%
+  summarise(playmates = max(playmates), .groups = "drop") %>%
+  #create two variables indicating whether (1) or not (0) the last utterance
+  #received by the speaker from the addressee in the preceding 3 minutes was
+  #positive or negative:
+  # Step 1: add incoming utterances
+  left_join(received_utterance, by = c("from" = "from", "to" = "to", "onset" = "onset")) %>%
+  # Step 2: create two variables based on variable valence_received
   mutate(
-    playmate = case_when(
-      is.na(onset) ~ 0, #no playmate info, so no playmates
-      onset < onset.x & terminus >= onset.x ~ 1, #playing/conversation has started before the utterance to be predicted and pupil and peer are still playmates
-      TRUE ~ 0 #no playmates
+    received_neg = ifelse(
+      is.na(valence_received) | #if no utterance received from addressee or...
+      valence_received == 0, #received utterance was not negative then...
+      0, 1 #no negative utterance received (0), else negative utterance received (1)
+    ),
+    received_pos = ifelse(
+      is.na(valence_received) | #if no utterance received from addressee or...
+        valence_received == 1, #received utterance was negative then...
+      0, 1 #no positive utterance received (0), else positive utterance received (1)
     )
   ) %>%
-  # select the temporally last utterance of each peer for each utterance of the pupil we want to predict
-  # and whether or not any of the utterances was incoming
-  # (every ID-onset combination of the first set of utterances)
-  group_by(ID.x, onset.x, terminus.x, loudness.x, ID.y) %>%
-  summarise(
-    terminus.y = last(terminus.y, order_by = onset.y),
-    loudness.y = last(loudness.y, order_by = onset.y),
-    negative = last(negative, order_by = onset.y), #was peer's last utterance incoming?
-    any_incoming = sum(!is.na(negative)) > 0, #was any of peer's utterances incoming?
-    playmate = max(playmate), #1 = curent playmates, 0 = currently not playmates
-    onset.y = last(onset.y, order_by = onset.y),
-    .groups = "drop"
-  )
-# finally, calculate exposure scores for each event with different windows, aggregations, and selections
-# a case is a ID-onset combination
-# Window: all voices in the last minute.
-# 4. expo_minute_max_playmate: The loudest voice of playmates' last utterances in the preceding minute. 
-# 5. expo_minute_max_conversation: The loudest voice of conversation partners' last utterances in the preceding minute. 
-# 6. expo_minute_max_other: The loudest voice of all other pupils' last utterances in the preceding minute. 
-loudness_events <- cases_help %>%
-  #helper variables: peer loudness for conversation partners, playmates, and others (first two categories may overlap)
+  #drop superfluous variable
+  select(-valence_received) %>%
+  #add semipath counts for balance effects
+  left_join(semi_paths, by = c("from" = "from", "to" = "to", "onset" = "onset")) %>%
+  #set missing values on number of semipaths to zero: no semipaths
   mutate(
-    loudness_playmate = ifelse(playmate == 1, loudness.y, NA),
-    loudness_conversation = ifelse(!is.na(negative), loudness.y, NA),
-    loudness_other = ifelse(is.na(negative) & playmate == 0, loudness.y, NA)
+    balance_neg = ifelse(is.na(balance_neg), 0, balance_neg),
+    balance_pos = ifelse(is.na(balance_neg), 0, balance_pos)
   ) %>%
-  #create cases and exposure variables
-  group_by(ID.x, onset.x, terminus.x, loudness.x) %>%
-  summarise(
-    expo_minute_max_playmate = max(loudness_playmate, na.rm = TRUE),
-    expo_minute_max_conversation = max(loudness_conversation, na.rm = TRUE),
-    expo_minute_max_other = max(loudness_other, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  #replace -Inf by NA
-  mutate(
-    expo_minute_max_playmate = ifelse(
-      is.infinite(expo_minute_max_playmate),
-      NA, expo_minute_max_playmate),
-    expo_minute_max_conversation = ifelse(
-      is.infinite(expo_minute_max_conversation),
-      NA, expo_minute_max_conversation),
-    expo_minute_max_other = ifelse(
-      is.infinite(expo_minute_max_other),
-      NA, expo_minute_max_other)
-  ) %>%
-  #replace NA by variable mean
-  mutate(
-    expo_minute_max_playmate = ifelse(
-      is.na(expo_minute_max_playmate),
-      mean(expo_minute_max_playmate, na.rm = TRUE),
-      expo_minute_max_playmate),
-    expo_minute_max_conversation = ifelse(
-      is.na(expo_minute_max_conversation),
-      mean(expo_minute_max_conversation, na.rm = TRUE),
-      expo_minute_max_conversation),
-    expo_minute_max_other = ifelse(
-      is.na(expo_minute_max_other),
-      mean(expo_minute_max_other, na.rm = TRUE),
-      expo_minute_max_other)
-  )
-# Window: only current voices.
-# 1. expo_last_max: The loudest voice at the moment a pupil starts an utterance.
-# 2. expo_last_mean: The average sound level at the moment a pupil starts an utterance.
-# 3. expo_last_min: The softest voice at the moment a pupil starts an utterance.
-loudness_events <- cases_help %>%
-  #keep only utterances that have not terminated yet
-  filter(
-    is.na(terminus.y) | #either peer's utterance has not ended or ...
-    terminus.y >= onset.x #... it has ended at or after the start of the new utterance
-  ) %>%
-  #create cases and exposure variables
-  group_by(ID.x, onset.x, terminus.x, loudness.x) %>%
-  summarise(
-    expo_last_max = max(loudness.y, na.rm = TRUE),
-    expo_last_mean = mean(loudness.y, na.rm = TRUE),
-    expo_last_min = min(loudness.y, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  #join to events with first set of exposure variables
-  full_join(loudness_events, by = c("ID.x", "onset.x", "terminus.x", "loudness.x")) %>%
-  #add time-constant pupil attributes
-  left_join(pupils_const, by = c("ID.x" = "ID"))  %>%
-  #select and rename variables
-  select(
-    ID = ID.x,
-    onset = onset.x,
-    terminus = terminus.x,
-    loudness = loudness.x,
-    expo_last_max:label,
-    sex:adhd
-  )
+  #add sex and ADHD score to speaker
+  left_join(pupils_const[, c("ID", "sex", "adhd")], by = c("from" = "ID")) %>%
+  #add sex and ADHD score to addressee
+  left_join(pupils_const[, c("ID", "sex", "adhd")], by = c("to" = "ID")) %>%
+  #rename: sex.x and adhd.x for speaker, sex.y and adhd.y for addressee
+  rename(sex_from = sex.x, sex_to = sex.y, adhd_from = adhd.x, adhd_to = adhd.y) %>%
+  #add variables for time-constant similarities and friendships between speaker
+  #and addressee
+  left_join(pairs_const, by = c("from" = "from", "to" = "to"))
 # cleanup helper data
-rm(utterances, addressing_help, playmates_help, cases_help)
+rm(help_utterances, playmates_dyn, received_utterance, semi_paths)
 
 ```
-
-### Visualization
-
-So far, I have not encountered an R package that visualizes a network of events such that every change in the network is reflected.
-
-As a consequence, I have created the animated visualization the hard way, creating a snapshot of the entwork at every moment an event starts. The animation is just the sequence of these snapshots. 
-
-If you want to know how, inspect the code below.
-
-```{r eval=FALSE, echo=TRUE}
-# Tutorial preparation: adjusted data sets, visualizations, and analyses
-
-# Load all required packages.
-library(tidyverse) #for general data wrangling and visualization
-library(ggraph) #for network visualization
-library(RColorBrewer) #for colour palettes
-
-# Load the data sets as provided to the user.
-load("data-raw/basicdata.RData")
-
-# Standard colors to use
-brewercolors <- brewer.pal( 5, name =  "Spectral")
-brewercolors[3] <- "#ffff00"
-names(brewercolors) <- c("Red", "Orange", "Yellow", "Green", "Blue")
-
-# Animated visualization of Break 1
-
-# - for every start of a playmate tie or utterance (with/out target), there is a
-#   snapshot of the network (sequence entry)
-# - the network shows the pupils (names, sex as shape, colour for ethnicity)
-#   with their friendship ties (not varying), playmate ties, utterance loudness
-#   (vertex size or size of circle behind vertex), and utterances towards peers
-#   (positive versus negative)
-# - network layout is fixed or interpolated between layouts calculated over all
-#   ties and interactions within a selected time span, e.g., with an
-#   interpolation for each event start within the selected time span:
-#   - starting with layout based only on friendships
-# - strategy: for a time point (in the sequence) select the (constant and)
-#   dynamic attributes and ties  as well as the layout coordinates that happen/are
-#   happening at this time point
-
-# determine the sequence of event start times in Break 1 (531 time points)
-timepoints <- pupils_dyn %>%
-  #retain onset time
-  select(onset) %>%
-  #add to (onset in) pairs_dyn
-  bind_rows(pairs_dyn) %>%
-  #select Break 1
-  filter(breakID == 1) %>%
-  #keep one row for each time point
-  group_by(onset) %>%
-  summarise(.groups = "drop") %>%
-  #add zero as start moment
-  bind_rows(tibble(onset = 0)) %>%
-  #rename onset
-  rename(timepoint = onset) %>%
-  #arrange (ensure that 0 becomes first entry)
-  arrange(timepoint)
-
-# determine starting positions of pupils based on friendship (not necessary: at time = 0 there are only friendships?)
-# create data frame of edges
-edges <- pairs_const %>%
-  #keep only friendships and one friendship case per pair
-  filter(from < to & friend == 1) %>%
-  #select friendships
-  select(from, to)
-# be sure that the nodes are sorted by ID
-pupils_const <- pupils_const %>%
-  arrange(ID)
-#create network (graph)
-friends_net <- graph_from_data_frame(edges, directed = FALSE, vertices = pupils_const)
-#calculate layout (positions of nodes)
-set.seed(2584)
-start_layout <- create_layout(friends_net, layout = 'kk') %>%
-  #only keep coordinates
-  select(x, y) %>%
-  #save as matrix
-  as.matrix()
-# cleanup
-rm(friends_net)
-
-# loop for each time point
-for (t in 1:nrow(timepoints)) {
-
-  # create the network for time point t
-  # create nodes
-  nodes <- pupils_dyn %>%
-    #select dynamic attributes (if any) for the current time point
-    filter(
-      breakID == 1 & #we only visualize network evolution in the first break
-      onset <= timepoints$timepoint[t] & #dynamic attribute must start at or before the current timepoint...
-      terminus >= timepoints$timepoint[t] #...and end at or after the current timepoint
-    ) %>%
-    #and add constant attributes (ensuring that all pupils are present)
-    full_join(pupils_const, by = "ID") %>%
-    #keep relevant variables
-    select(ID, loudness, gameapp, label, sex:adhd) %>%
-    # set missing values on loudness and gameapp to 0 (no sound, not gaming)
-    mutate(
-      loudness = ifelse(is.na(loudness), 0, loudness),
-      gameapp = ifelse(is.na(gameapp), 0, gameapp)
-    ) %>%
-    #sort by vertex ID
-    arrange(ID) %>%
-    # ensure that there is only one case per pupil
-    group_by(ID) %>%
-    slice_head(n = 1) %>% #select the first row for a pupil (in case there are duplicates)
-    ungroup()
-  # create edges: one row for undirected edge
-  edges <- pairs_dyn %>%
-    #select dynamic relations (if any) for the current time point
-    filter(
-      breakID == 1 & #we only visualize network evolution in the first break
-        onset <= timepoints$timepoint[t] & #dynamic attribute must start at or before the current timepoint...
-        terminus >= timepoints$timepoint[t] #...and end at or after the current timepoint
-    ) %>%
-    #add constant ties (friendships) as additional rows
-    bind_rows(pairs_const) %>%
-    #keep relevant rows
-    filter(
-      (is.na(friend) | friend == 1) & #remove rows originally from pairs_const that are not friends (friend == 0)
-      (((is.na(dyntie) | dyntie == "Playmate") & from < to ) | #for friends and playmates, only retain one case
-      dyntie == "Utterance" ) #but keep all (directed) utterances
-    ) %>%
-    #set variable dyntie for friendships and change negative into character variable
-    mutate(
-      dyntie = ifelse(is.na(dyntie), "Friendship", dyntie),
-      Valence = ifelse(negative == 1, "neg", "pos") #for plotting within Shiny, use colornames such as red and darkgreen
-      ) %>%
-    #select relevant variables
-    select(from, to, dyntie, Valence)
-  #create network (graph)
-  temp_net <- graph_from_data_frame(edges, directed = TRUE, vertices = nodes)
-  #calculate layout (positions of nodes)
-  temp_layout <- create_layout(temp_net, layout = "igraph", algorithm = 'kk', coords = start_layout, dim = 2) # start_layout) #
-  #store as starting positions for next plot
-  start_layout <- temp_layout %>%
-    #only keep coordinates
-    select(x, y) %>%
-    #save as matrix
-    as.matrix()
-
-  # create the network plot for this time point
-  ggraph(temp_layout) +
-    geom_edge_link(
-      aes(filter = (dyntie == "Friendship")),
-      colour = "grey",
-      alpha = 0.7,
-      edge_width = 2.3
-      ) +
-    geom_edge_link(
-      aes(filter = (dyntie == "Playmate")),
-      colour = "black",
-      edge_width = 0.7
-      ) +
-    geom_edge_fan(
-      aes(
-        filter = (dyntie == "Utterance"),
-        #alpha = stat(index),
-        colour = Valence
-        ),
-      show.legend = FALSE,
-      arrow = arrow(angle = 30, length = unit(3, "mm"), type = "closed"),
-      end_cap = circle(4, 'mm'),
-      edge_width = 1.5
-    ) +
-    geom_node_point(
-      aes(fill = ethnicity, shape = ifelse(sex == 1, "girl", "boy")),
-      size = 6
-    ) +
-    geom_node_point(
-      aes(
-        filter = (loudness > 0),
-        alpha = loudness
-      ),
-      show.legend = FALSE,
-      shape = 1,
-      colour = brewercolors["Blue"],
-      stroke = 2,
-      size = 14
-    ) +
-    geom_node_text(aes(label = label), nudge_y = 0.1, vjust = 0, size = 3) +
-    geom_text(
-      label = paste0("Time ",
-                     format(trunc(timepoints$timepoint[t]), width = 2), ":",
-                     formatC(round(60 * (timepoints$timepoint[t] %% 1)),
-                            flag = "0", width=2)),
-      x = max(temp_layout$x), y = max(temp_layout$y),
-      hjust = 1, #aligned left
-      vjust = 0, #aligned bottom
-      size = 4
-      ) +
-    scale_edge_alpha("Edge direction", guide = "none") +
-    scale_shape_manual(name = "Sex", values = c(22, 21)) +
-    scale_fill_brewer(name = "Ethnicity", type = "div", palette = 1) +
-    guides(fill = guide_legend(override.aes=list(shape=21))) + #bug fix
-    scale_alpha(range = c(0.4, 0.8)) + #relative loudness, not absolute due to automatic rescaling
-    scale_edge_color_manual(values = c(neg = brewercolors[["Red"]], pos = brewercolors[["Green"]])) +
-    theme_void()
-
-  #save plot to png file for quick rendering
-  ggsave(paste0("inst/tutorials/Session1/images/breakdyn", t, ".png"),
-         device = "png", width = 18, height = 12, units = "cm", dpi = 200)
-
-}
-```
-
-
