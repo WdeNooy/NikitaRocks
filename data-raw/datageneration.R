@@ -1124,7 +1124,7 @@ as.data.frame(ranef(model_loudness_ml)) %>%
 #    - pupil-specific negativity level (weakly neg correlated with number of friends; activity sender)
 #    - (recipient popularity) more negativity for addressee with higher adhd score (?)
 #    - friends: less negativity
-#    - in/outgroup (playmate groups): more negativity between groups
+#    - in/outgroup (playmate groups): more negativity between groups (skip)
 #    - reciprocity for negativity
 #    - transitivity/balance for negativity
 #description
@@ -1756,6 +1756,11 @@ save.image("playmates_diffusion.RData")
 # Ensure that a pupil's utterance does not overlap with the next
 # which is possible because of the random end time of utterances.
 pairs_dyn <- pairs_dyn %>%
+  #set missing terminus values to 30 and terminus.censored to true
+  mutate(
+    terminus.censored = ifelse(is.na(terminus), TRUE, terminus.censored),
+    terminus = ifelse(is.na(terminus), 30, terminus)
+  ) %>%
   #arrange by sender (from), breakID, onset, and playmate
   arrange(from, breakID, playmate, onset) %>%
   #group by from and playmate to get lagged values only per from-playmate combination
@@ -1815,6 +1820,8 @@ save(pairs_const, file = "data/pairs_const.RData")
 save(pairs_dyn, file = "data/pairs_dyn.RData")
 
 # Derived data sets for analysis ####
+# NOTE: Using the 4 basic data sets provided in the NikitaRcks package as
+# starting point.
 
 ## Data Sessions 1 and 2 ####
 
@@ -2088,6 +2095,175 @@ diffusion_data <- pupils_const %>%
 rm(adopters, exposure, friends_adopted)
 #save to package data directory
 save(diffusion_data, file = "data/diffusion_data.RData")
+
+# Data Session 5: predicting negativity ####
+
+#    - pupil-specific negativity level (weakly neg correlated with number of friends; activity sender)
+#    - (recipient popularity) more negativity for addressee with higher adhd score (?)
+#    - friends: less negativity
+#    - in/outgroup (playmate groups): more negativity between groups (replace by 'being playmate'?)
+#    - reciprocity for negativity
+#    - transitivity/balance for negativity
+
+# Helper table: playmate ties between pupils (for checking if utterance is
+# between playmates).
+playmates_dyn <- pairs_dyn %>%
+  #select only playmate tied in Break 1
+  filter( dyntie == "Playmate" & breakID == 1 ) %>%
+  #only keep relevant variables (and rename onset and terminus)
+  select(from, to, onset_play = onset, terminus_play = terminus)
+
+# Helper table: utterances received by speaker from addressee (for reciprocity
+# effect).
+received_utterance <- pairs_dyn %>%
+  #select only utterances (not playmate ties) in Break 1
+  filter( dyntie == "Utterance" & breakID == 1 ) %>%
+  #keep relevant variables
+  select(from, to, onset, terminus, negative) %>%
+  #add all utterances with speaker and addressee reversed to each utterance
+  left_join(pairs_dyn, by = c("from" = "to", "to" = "from")) %>%
+  #select only utterances where the end time of the received utterance (in Break
+  #1) is at most 3 minutes before the start of the original utterance
+  filter(
+    terminus.y < onset.x & #received utterance must end before start new utterance
+    onset.x - terminus.y <= 3 & #but not more than three minutes
+    breakID == 1 & #added utterance must be in Break 1
+    dyntie == "Utterance" #and be an utterance (not playmate tie)
+    ) %>%
+  #for every original utterance, keep the last received utterance
+  # Step 1: sort utterances (identified by from & to & onset.x) by time of
+  # received utterance (terminus.y)
+  arrange(from, to, onset.x, terminus.y) %>%
+  # Step 2: for each (original utterance), keep the valence score of the last
+  # (in time closest) received utterance
+  group_by(from, to, onset.x) %>%
+  summarise(valence_received = last(negative.y), .groups = "drop") %>%
+  #rename onset.x
+  rename(onset = onset.x)
+
+# Helper files for analyzing the effects of structural balance: the number of
+# balanced semicycles (of length 3) created by a negative utterance and the
+# number created by a positive utterance, using the last utterances among pupils
+# that started in the preceding 5 minutes.
+# Create a table of all utterances with negativity recoded to -1 versus +1.
+help_utterances  <- pairs_dyn %>%
+  #select only utterances (not playmate ties) in Break 1
+  filter( dyntie == "Utterance" & breakID == 1 ) %>%
+  #recode negativity score (assuming no missing values)
+  mutate(negative = ifelse(negative == 0, 1, -1)) %>%
+  #keep relevant variables
+  select(from, to, onset, terminus, negative)
+# Symmetrize this table: add all utterances in the reverse direction.
+help_utterances <- help_utterances %>%
+  #exchange sender and receiver
+  rename(to = from, from = to) %>%
+  #add to original table (result is symmetric)
+  bind_rows(help_utterances)
+#construct semipaths of length 2, add them to utterances, and count them
+semi_paths <- help_utterances %>%
+  #join with itself: addressee of first utterance is speaker of second utterance
+  full_join(help_utterances, by = c("to" = "from")) %>%
+  #calculate valence of remaining semipaths (this is why negativity had to be
+  #recoded)
+  mutate(sign = negative.x * negative.y) %>%
+  #keep (and rename) relevant variables
+  select(from, via = to, to = to.y, onset_path1 = onset.x, onset_path2 = onset.y, sign) %>%
+  #drop all (closed) semipaths from a pupil back to herself and all semipaths
+  #spanning more than 5 minutes
+  filter(
+    from != to, #start pupil is not equal to end pupil
+    abs(onset_path1 - onset_path2) <= 5 #absolute difference 5 minutes or less
+    ) %>%
+  #add semipaths to all utterances (and playmate ties, to be dropped later)
+  right_join(pairs_dyn, by = c("from" = "from", "to" = "to")) %>%
+  #keep utterances in Break 1 and semipaths starting in the preceding 5 minutes
+  filter(
+    dyntie == "Utterance" & #must be an utterance (not playmate tie)
+    breakID == 1 & #in Break 1 and
+    onset_path1 < onset & #first step in semipath must start before start new utterance
+    onset - onset_path1 <= 5 & #but not more than five minutes
+    onset_path2 < onset & #second step in semipath must start before start new utterance
+    onset - onset_path2 <= 5 #but not more than five minutes
+  ) %>%
+  #for each utterance, keep the chronologically last semipath per in-between
+  #(`via`), that is, using only the last utterance between speaker and
+  #in-between and between addressee and in-between
+  # Step 1: sort on utterance and time of utterances via in-between
+  arrange(from, to, onset, onset_path1, onset_path2) %>%
+  # Step 2: retain the last observation (row) per in-between (`via`)
+  group_by(from, to, onset, via) %>%
+  summarise(sign = last(sign), .groups = "drop") %>%
+  #count number of negative and positive semipaths per utterance
+  group_by(from, to, onset) %>%
+  summarise(
+    balance_neg = sum(sign == -1), #number of semipaths with negative sign
+    balance_pos = sum(sign == 1), #number of semipaths with positive sign
+    .groups = "drop"
+    )
+
+# Construct the analysis data set.
+utterances <- pairs_dyn %>%
+  #select only utterances (not playmate ties) in Break 1
+  filter( dyntie == "Utterance" & breakID == 1 ) %>%
+  #create a variable indicating that the utterance addresses a current playmate:
+  # Step 1: add all playmate ties between speaker and addressee to each utterance
+  left_join(playmates_dyn,  by = c("from" = "from", "to" = "to")) %>%
+  # note: every utterance appears at last once, possibly more than once if
+  # speaker and addressee played more than once together
+  # Step 2: create a variable indicating whether speaker and addressee were
+  # playing together at the time the speaker started saying something to
+  # addressee
+  mutate(playmates = ifelse(
+    is.na(onset_play) | #speaker and addressee did not play together in Break 1 or...
+    onset < onset_play | #utterance started before playing together or ...
+    onset > terminus_play, #utterance started after the end of playing together then ...
+    0, 1) #assign score zero, otherwise score 1
+    ) %>%
+  # Step 3: keep only one observation (row) for each utterance with the highest
+  # value of the playmates variable (only retain relevant variables)
+  group_by(from, to, breakID, onset, terminus, negative) %>%
+  summarise(playmates = max(playmates), .groups = "drop") %>%
+  #create two variables indicating whether (1) or not (0) the last utterance
+  #received by the speaker from the addressee in the preceding 3 minutes was
+  #positive or negative:
+  # Step 1: add incoming utterances
+  left_join(received_utterance, by = c("from" = "from", "to" = "to", "onset" = "onset")) %>%
+  # Step 2: create two variables based on variable valence_received
+  mutate(
+    received_neg = ifelse(
+      is.na(valence_received) | #if no utterance received from addressee or...
+      valence_received == 0, #received utterance was not negative then...
+      0, 1 #no negative utterance received (0), else negative utterance received (1)
+    ),
+    received_pos = ifelse(
+      is.na(valence_received) | #if no utterance received from addressee or...
+        valence_received == 1, #received utterance was negative then...
+      0, 1 #no positive utterance received (0), else positive utterance received (1)
+    )
+  ) %>%
+  #drop superfluous variable
+  select(-valence_received) %>%
+  #add semipath counts for balance effects
+  left_join(semi_paths, by = c("from" = "from", "to" = "to", "onset" = "onset")) %>%
+  #set missing values on number of semipaths to zero: no semipaths
+  mutate(
+    balance_neg = ifelse(is.na(balance_neg), 0, balance_neg),
+    balance_pos = ifelse(is.na(balance_neg), 0, balance_pos)
+  ) %>%
+  #add sex and ADHD score to speaker
+  left_join(pupils_const[, c("ID", "sex", "adhd")], by = c("from" = "ID")) %>%
+  #add sex and ADHD score to addressee
+  left_join(pupils_const[, c("ID", "sex", "adhd")], by = c("to" = "ID")) %>%
+  #rename: sex.x and adhd.x for speaker, sex.y and adhd.y for addressee
+  rename(sex_from = sex.x, sex_to = sex.y, adhd_from = adhd.x, adhd_to = adhd.y) %>%
+  #add variables for time-constant similarities and friendships between speaker
+  #and addressee
+  left_join(pairs_const, by = c("from" = "from", "to" = "to"))
+# cleanup helper data
+rm(help_utterances, playmates_dyn, received_utterance, semi_paths)
+#save to package data directory
+save(utterances, file = "data/utterances.RData")
+
 
 
 # PROBLEM: `ndtv::` (and `networkDynamic::`) ####

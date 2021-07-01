@@ -225,7 +225,7 @@ Hands-on:
 
 @. Advanced: Specify cross-nested multilevel model and interpret 
 
-### Morning II, Part II - Network change: Predicting sender and/or recipient
+### Morning II, Part II - Network change: Predicting ties (sender and/or recipient)
 
 Introduction to:
 
