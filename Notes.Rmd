@@ -227,6 +227,8 @@ Hands-on:
 
 ### Morning II, Part II - Network change: Predicting ties (sender and/or recipient)
 
+Previous Session: Hypothesize behaviour of sender towards recipient (of the relational event/action) __given that sender acts towards recipient__.
+
 Introduction to:
 
 1. Who will select whom next (given that there is a next relational event)? Combination of two processes: (a) who is going to act when? and (b) the action is directed towards whom? Possibly, a third process: (c) what is the nature of the action? 

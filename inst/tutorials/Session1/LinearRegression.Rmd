@@ -895,6 +895,7 @@ If you want to know how, inspect the code below.
 
 # Load all required packages.
 library(tidyverse) #for general data wrangling and visualization
+library(igraph) #for network visualization
 library(ggraph) #for network visualization
 library(RColorBrewer) #for colour palettes
 

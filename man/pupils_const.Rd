@@ -14,7 +14,7 @@ A data frame (tibble) with eight variables:
   \item{terminus}{time point at which the pupil appears within the data set for the last time, as integer; required for visualizations with the ndtv package}
   \item{sex}{pupil's sex, boy (0) or girl(1)}
   \item{ethnicity}{pupil's ethnicity, coded as a single letter (A, B, C, D, E)}
-  \item{adhd}{pupil's ADHD level, coded as a number between 0 and 10}
+  \item{adhd}{pupil's ADHD level, coded as a real number between 0 and 10}
 }
 }
 \usage{

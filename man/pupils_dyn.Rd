@@ -9,9 +9,9 @@ A data frame (tibble) with eight variables:
 \describe{
   \item{ID}{integer pupil ID, key to other data frames}
   \item{breakID}{sequential number of the break, as integer (1 - 10)}
-  \item{onset}{time point within the break at which a pupil starts an action, as real number indicating the (fraction of) the minute in the break}
+  \item{onset}{time point within the break at which a pupil starts an action, as real number indicating the (fraction of) the minute within the break}
   \item{onset.censored}{indicates whether the start time (onset) was unobserved, as boolean}
-  \item{terminus}{time point within the break at which a pupil ends an action, as real number indicating the (fraction of) the minute in the break}
+  \item{terminus}{time point within the break at which a pupil ends an action, as real number indicating the (fraction of) the minute within the break}
   \item{terminus.censored}{indicates whether the end time (terminus) was unobserved or terminated by circumstances, as boolean}
   \item{loudness}{(average) loudness of pupil's voice, as a real number between 0.05 (whisper) to 1 (loudest cry)}
   \item{gameapp}{pupil is playing a new game app on their own mobile device, as integer: 0 (No) or 1 (Yes)}

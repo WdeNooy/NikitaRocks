@@ -14,6 +14,9 @@ library(learnr)
 library(tidyverse)
 library(knitr)
 library(RColorBrewer) #for colour palettes
+library(igraph) #for network visualization
+library(ggraph) #for network visualization
+library(lme4) #for multilevel logistic regression
 
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
@@ -31,6 +34,57 @@ pairs_dyn <- NikitaRocks::pairs_dyn
 
 #load prepared analysis data sets
 utterances <- NikitaRocks::utterances
+
+#create the network for time point onset == 22.4615385, so it is available everywhere
+# create edges Part 1
+edges <- pairs_dyn %>%
+  #select all playmate ties and utterances involving pupils 5 and 13 that started at (at most 5 minutes before) 22.4615385 in Break 1
+  filter(
+    breakID == 1 & #only in Break 1 (just to be sure)
+    onset <= 22.4615385 & #activity must start at or before the current timepoint...
+    ((dyntie == "Utterance" & onset >= 22.4615385 - 5) | #...utterances must start at most 5 minutes before the current timepoint or... 
+      (dyntie == "Playmate" & terminus >= 22.4615385)) & #...playmate tie must end at/after 22.4615385, and ...
+    (from %in% c(5, 13) | to %in% c(5, 13)) & #sender or receiver must be Pupil 5 or 13
+    !(dyntie == "Playmate" & from >= to) #single playmate tie per pair
+  ) %>%
+  #recode negative to string for coluring
+  mutate(
+    negative = ifelse(round(onset, digits = 5) == 22.46154, "pred", ifelse(negative == 1, "neg", "pos"))
+  )
+# create nodes from selected edges
+nodes <- edges %>%
+  #only keep nodes ID variables
+  select(from, to) %>%
+  #stack the two variables
+  pivot_longer(everything(), names_to = "x", values_to = "ID") %>%
+  #keep one row per pupil and only ID variable
+  group_by(ID) %>%
+  summarise(.groups = "drop") %>%
+  #add constant pupil characteristics
+  left_join(pupils_const, by = "ID")
+# create edges Part 2: add friendships among selected pupils
+edges <- pairs_const %>%
+  #select all friendships of selected pupils
+  right_join(nodes, by = c("from" = "ID")) %>%
+  #keep friendships directed at selected nodes
+  right_join(nodes, by = c("to" = "ID")) %>%
+  #keep only 1 of 2 symmetric friendships
+  filter(from < to) %>%
+  #add breakID, onset, terminus, and dyntie variable
+  mutate(
+    breakID = 1,
+    onset = onset.x,
+    terminus = terminus.x,
+    dyntie = "Friendship"
+  ) %>%
+  #keep relevant variables
+  select(from, to, breakID, onset, terminus, dyntie) %>%
+  #add to edges
+  bind_rows(edges)
+#create network (with igraph)
+network <- graph_from_data_frame(edges, directed = TRUE, vertices = nodes)
+#calculate layout (positions of nodes)
+net_layout <- create_layout(network, layout = "igraph", algorithm = 'kk', dim = 2)
 ```
 
 <!-- Define programming tip style -->
@@ -48,28 +102,552 @@ utterances <- NikitaRocks::utterances
 </style>
 
 
-## <INTRO>
+## Analyzing ties
 
+In the preceding sessions, we have tried to predict a characteristic of a pupil (loudness, game app adoption). In network analytic terms, we have focused on the nodes of the network.
+
+Let us now turn to the lines in the network, more specifically, the statements that pupils make toward each other. Can we predict if a statement made by one pupil to another pupil is negative or positive (not negative)?
+
+```{r fragment1plot1}
+# snapshot from dynamic network in Break 1 for statement by Lauren to Omar at time 22:28.
+# create the network plot for this time point
+ggraph(net_layout) +
+  geom_edge_link(
+    aes(filter = (dyntie == "Friendship")),
+    colour = "grey",
+    alpha = 0.7,
+    edge_width = 2.3
+  ) +
+  geom_edge_link(
+    aes(filter = (dyntie == "Playmate")),
+    colour = "black",
+    edge_width = 0.7
+  ) +
+  geom_edge_fan(
+    aes(
+      filter = (dyntie == "Utterance"),
+      alpha = (onset + 5 - 22.4615385)/5,
+      colour = negative
+    ),
+    show.legend = FALSE,
+    arrow = arrow(angle = 30, length = unit(3, "mm"), type = "closed"),
+    end_cap = circle(4, 'mm'),
+    edge_width = 1.5
+  ) +
+  geom_node_point(
+    aes(fill = ethnicity, shape = ifelse(sex == 1, "girl", "boy")),
+    size = 6
+  ) +
+  geom_node_text(aes(label = label), nudge_y = 0.1, vjust = 0, size = 3) +
+  geom_text(
+    label = paste0("Time ",
+                   format(trunc(max(edges$onset)), width = 2), ":",
+                   formatC(round(60 * (max(edges$onset) %% 1)),
+                           flag = "0", width=2)),
+    x = max(net_layout$x), y = max(net_layout$y),
+    hjust = 1, #aligned left
+    vjust = 0, #aligned bottom
+    size = 4
+  ) +
+  scale_edge_alpha("Edge direction", guide = "none") +
+  scale_shape_manual(name = "Sex", values = c(22, 21)) +
+  scale_fill_brewer(name = "Ethnicity", type = "div", palette = 1) +
+  guides(fill = guide_legend(override.aes=list(shape=21))) + #bug fix
+  scale_alpha(range = c(0.4, 0.8)) + #relative loudness, not absolute due to automatic rescaling
+  scale_edge_color_manual(values = c(pred = brewercolors[["Blue"]], neg = brewercolors[["Red"]], pos = brewercolors[["Green"]])) +
+  theme_void()
+```
+
+The above figure highlights (blue arrow) one example of a statement for which we want to predict if it is negative or positive. This is Lauren's statement to Omar at time 22:28. 
+
+It shows the statement within its network context:
+
+* Friendship relations (fat gray lines).
+* Current playmates: thin black lines.
+* Previous statements involving Lauren or Omar, started in the preceding 5 minutes. Green arrows indicate positive statements, red arrows negative statements. The older the statement, the more transparent the arrow.
+
+###
+
+### The pair as observation and tie negativity as dependent/outcome variable.
+
+In this session, we will use the data frame `utterances` in our analyses. Have a look at the part of this data set that represents the utterances depicted in the previous figure (pupil IDs are replaced by their first names).
+
+```{r datafragment1}
+# excerpt of data frame to snapshot (sorted chronologically.
+utterances %>%
+  #filter utterances
+  filter(
+    onset <= 22.4615385 & onset >= 22.4615385 - 5 & #at 22.4615385 and max 5 minutes before
+    from %in% nodes$ID & to %in% nodes$ID #only utterances among selected pupils
+    ) %>% 
+  #add pupil names
+  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
+  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>% 
+  #select relevant variables (exclude predictors)
+  select(from = label.x, to = label.y, breakID:negative) %>%
+  #sort chronologically (descending)
+  arrange(desc(onset))
+```
 
 <div class="question">
 Exercises
 
-1. 
+1. Can you trace the first few rows of this table in the previous figure?
+
+2. What is the dependent/outcome variable that we are going to predict?
+
+3. Each row in the data set is an observation for our analyses. Which combination of variables (columns) uniquely identifies an observation? How is this different from the previous sessions?
 </div>
+
+### Effects on tie valence
+
+A tie is equal to a pair of nodes. For lines, the order of nodes (from versus to) does not matter, but the order matters for arcs (arrows). Instead of analyzing characteristics of nodes (pupils), we are now going to analyze a characteristic of pairs of nodes. In our example, whether a statement is positive or negative.
+
+How can we predict if Lauren's statement on Omar (blue arrow) is positive or negative from the information that we have?
+
+```{r fragment1plot2}
+# snapshot from dynamic network in Break 1 for statement by Lauren to Omar at time 22:28.
+# create the network plot for this time point
+ggraph(net_layout) +
+  geom_edge_link(
+    aes(filter = (dyntie == "Friendship")),
+    colour = "grey",
+    alpha = 0.7,
+    edge_width = 2.3
+  ) +
+  geom_edge_link(
+    aes(filter = (dyntie == "Playmate")),
+    colour = "black",
+    edge_width = 0.7
+  ) +
+  geom_edge_fan(
+    aes(
+      filter = (dyntie == "Utterance"),
+      alpha = (onset + 5 - 22.4615385)/5,
+      colour = negative
+    ),
+    show.legend = FALSE,
+    arrow = arrow(angle = 30, length = unit(3, "mm"), type = "closed"),
+    end_cap = circle(4, 'mm'),
+    edge_width = 1.3
+  ) +
+  geom_node_point(
+    aes(fill = ethnicity, shape = ifelse(sex == 1, "girl", "boy")),
+    size = 6
+  ) +
+  geom_node_text(aes(label = label), nudge_y = 0.1, vjust = 0, size = 3) +
+  geom_text(
+    label = paste0("Time ",
+                   format(trunc(max(edges$onset)), width = 2), ":",
+                   formatC(round(60 * (max(edges$onset) %% 1)),
+                           flag = "0", width=2)),
+    x = max(net_layout$x), y = max(net_layout$y),
+    hjust = 1, #aligned left
+    vjust = 0, #aligned bottom
+    size = 4
+  ) +
+  scale_edge_alpha("Edge direction", guide = "none") +
+  scale_shape_manual(name = "Sex", values = c(22, 21)) +
+  scale_fill_brewer(name = "Ethnicity", type = "div", palette = 1) +
+  guides(fill = guide_legend(override.aes=list(shape=21))) + #bug fix
+  scale_alpha(range = c(0.4, 0.8)) + #relative loudness, not absolute due to automatic rescaling
+  scale_edge_color_manual(values = c(pred = brewercolors[["Blue"]], neg = brewercolors[["Red"]], pos = brewercolors[["Green"]])) +
+  theme_void()
+```
+
+<div class="question">
+Exercises
+
+Have another look at the network.
+
+1. Can you formulate hypotheses about the effects of Lauren's and/or Omar's characteristics on the valence (positive versus negative) of the statement that we want to predict?
+
+2. Which statement valence (positive or negative) do you expect given that Lauren and Omar are friends (the fat gray line is hardly visibly) and are currently playing together?
+
+3. Given the valence of the statements between Lauren and Omar in the preceding 5 minutes, would you expect Lauren's new statement to be positive or negative?
+
+4. In the preceding 5 minutes, Lauren received positive statements from Cambrie and Trevon, who said negative things to Omar. Given this situation, would you expect Lauren's new statement to be positive or negative? Tip: My friend's enemy...
+</div>
+
+### Different types of independent/predictor variables
+
+The four questions in the preceding sub-topic represent different types of effects and different types of independent/predictor variables:
+
+* <i class="question">Sender-effect</i>: Effect of a characteristic of the sender of a tie. Example: Do girls on average make more or less negative statements to others?
+* <i class="question">Receiver-effect</i>: Effect of a characteristic of the receiver of a tie. Example: Do boys on average attract more or less negative statements from others?
+* <i class="question">(Dis)similarity effect</i>: Effect of a variable indicating whether sender and receiver have the same characteristic. Example: Do pupils tend to make more positive statements to peers with the same ethnicity than to pupils of other ethnicity?
+* <i class="question">Other tie effect</i>: Effect of the presence or value of another relation between sender and receiver. Example: Do friends tend to receive more positive statements than pupils who are not friends?
+* <i class="question">Same tie effect</i>: Effect of the presence or value of previous ties between sender and receiver on the same relation as the predicted tie. For example: Valence of the statements between Lauren and Omar in the preceding 5 minutes. If the network is directed (arcs/arrows), we distinguish between:
+    + <i class="question">Repetition/replication</i>: Presence or characteristics of a previous tie from sender to receiver. Example: a previous statement by Lauren to Omar.
+    + <i class="question">Reciprocity</i>: Presence or characteristics of a previous tie in de opposite direction, from receiver to sender. Example: a previous statement by Omar to Lauren.
+* <i class="question">Local network context effect</i>: Effect of the presence or value of network structures including (at least) a third node. Example: Does Lauren adjust the valence of her statement to the fact that Lauren had positive exchanges with Cambrie and Trevor, who said negative things to Omar?
+
+```{r datafragment2}
+# excerpt of data frame to snapshot (sorted chronologically) displaying all predictors.
+utterances %>%
+  #filter utterances
+  filter(
+    onset <= 22.4615385 & onset >= 22.4615385 - 5 & #at 22.4615385 and max 5 minutes before
+    from %in% nodes$ID & to %in% nodes$ID #only utterances among selected pupils
+    ) %>%
+  #sort chronologically (descending)
+  arrange(desc(onset))
+```
+
+<div class="question">
+Exercises
+
+1. Which of the types of independent/predictor variables do you recognize in the above data? Tip: Use the little black triangle to see more variables.
+
+2. Which ones are missing?
+
+3. Can you figure out how the variable `simil_sex` was constructed?
+</div>
+
+### Independent/predictor variables from pupil characteristics and other ties
+
+It is relatively straightforward to construct independent variables for sender, receiver, and (dis)similarity effects: Just add the characteristics for sender and receiver or the difference.
+
+Predictors for effects of other ties (friendship, playmate) just include the Yes(1)/No(0) variable used to register friendships and playmates in the basic data sets for pairwise (= lines) information: `pairs_const` and `pairs_dyn`.
+
+```{r basicdatacheck, exercise = TRUE}
+# Just issue the name of a data set to show its contents.
+pairs_const
+```
+
+<div class="question">
+Exercise
+
+1. Check the data sets `pairs_const` and `pairs_dyn` to see how friendships and playmate ties are registered.
+</div>
+
+### Reciprocity
+
+We calculate the independent/predictor variable for the reciprocity effect from the statements that Lauren received from Omar in the 5 minutes preceding Lauren's new statement. These statements are listed below.
+
+```{r datafragment3}
+# excerpt of data frame to snapshot (sorted chronologically) displaying only the  preceding statements between Lauren and Omar.
+utterances %>%
+  #filter utterances
+  filter(
+    onset < 22.4615 & onset >= 22.4615385 - 5 & #at 22.4615385 and max 5 minutes before
+    from == 5 & to == 13 #only utterances among selected pupils
+    ) %>%
+  #add pupil labels
+  left_join(pupils_const[, c("ID", "label")], by = c("from" = "ID")) %>%
+  left_join(pupils_const[, c("ID", "label")], by = c("to" = "ID")) %>%
+  #keep (and rename) relevant variables
+  select(from = label.x, to = label.y, breakID, onset, terminus, negative) %>%
+  #sort chronologically (descending)
+  arrange(desc(onset))
+```
+
+The reciprocity predictor variable is essentially a count of received ties. In our example, a count of negative and/or positive statements received by Lauren from Omar.
+
+Some options:
+
+1. Only use Omar's last statement directed at Lauren. If it was negative, the reciprocity predictor becomes 1, otherwise it becomes 0. Note: This is the variable `received_neg` in the data set `utterances`.
+2. Subtract the number of positive statements from the the number of negative statements. If there are more negative statements, the reciprocity predictor is positive. If there are more positive statements, it is negative.
+3. As 2, but weigh each statement, so more recent statements have higher weights. 
+4. As 2 or 3 but divide by the (weighed) number of statements.
+
+<div class="question">
+Exercises
+
+1. Think about the process that happened: Lauren and Omar exchanged several statements, most of which were negative. What is going on? To which of Omar's statements do you expect Lauren to respond? 
+
+2. As a consequence, which option for the reciprocity variable do you prefer?
+</div>
+
+### Balance (local network context)
+
+Effects including a third node (pupil) are typical for network analysis. Many effects are possible. Transitivity, which we will encunter in Session 6, is just one of them.
+
+Let us focus on one example for a relation that is positive or negative: <i class="question">structural balance</i>. 
+
+Social psychological balance theory (related to the theory of cognitive dissonance) argues that human beings prefer to be friends of their friends, enemies of their friends' enemies, and friends of their enemies' enemies.
+
+Translate 'friend' into a positive relation (green) and 'enemy' into a negative relation (red). Four situations are possible (if we neglect the direction of ties), see the figure below.
+
+```{r balance, fig.asp = 0.175}
+#Create data frames.
+nodes2 <- data.frame(
+  x = seq.int(from = 1, to = 23, by = 2),
+  y = rep(c(0.75, 3.75, 0.75), 4),
+  label = rep(c("Actor", "Tertius", "Alter"), 4)
+)
+edges2 <- data.frame(
+  x = c(1, 1, 7, 7, 13, 13, 19, 19, 3, 9, 15, 21),
+  y = c(1, 1, 1, 1, 1, 1, 1, 1, 3.5, 3.5, 3.5, 3.5),
+  xend = c(3, 5, 9, 11, 15, 17, 21, 23, 5, 11, 17, 23),
+  yend = c(3.5, 1, 3.5, 1, 3.5, 1, 3.5, 1, 1, 1, 1, 1),
+  x_sign = c(1.6, 3, 7.6, 9, 13.6, 15, 19.6, 21, 4.4, 10.4, 16.4, 22.4),
+  y_sign = c(2.25, .75, 2.25, .75, 2.25, .75, 2.25, .75, 2.25, 2.25, 2.25, 2.25),
+  sign = c("+1", "?", "+1", "?", "-1", "?", "-1", "?", "+1", "-1", "+1", "-1"),
+  value = c("pos", "predict", "pos", "predict", "neg", "predict", "neg", "predict", "pos", "neg", "pos", "neg")
+)
+#Plot.
+ggplot() +
+  geom_text(data = nodes2, aes(x = x, y = y, label = label)) +
+  geom_segment(data = edges2, aes(x = x, y = y, xend = xend, yend = yend, colour = value), size = 1.2) +
+  geom_text(data = edges2, aes(x = x_sign, y = y_sign, label = sign)) +
+  scale_y_continuous(limits = c(0.25, 4.25)) +
+  scale_edge_color_manual(values = c(predict = brewercolors[["Blue"]], neg = brewercolors[["Red"]], pos = brewercolors[["Green"]])) +
+  theme_void()
+#Cleanup.
+rm(edges2, nodes2)
+```
+
+<div class="question">
+Exercises
+
+1. According to balance theory, in which of the above situations is Actor going to act positively towards Alter?
+
+2. Again according to balance theory, in which of the above situations is Actor going to act negatively towards Alter?
+</div>
+
+###
+
+A simple rule summarizes balance theory here: the predicted sign (positive versus negative) equals the sign of the product of the two ties that link Tertius to Actor and Alter.
+
+<div class="question">
+Exercise
+
+1. Check the rule for the four situations.
+</div>
+
+### 
+
+A balance predictor variable counts the number of two-step ties between Actor and Alter via Tertius that have a positive or negative product of signs.
+
+As with the reciprocity predictor variable, we can count all ties or only the last ties, and weigh or not weigh ties.
+
+In the data set hat we will use (`utterances`), only the last statement between each pair of pupils in the last 5 minutes (before the new statement) has been used to calculate two balance predictor variables:
+
+* `balance_neg`: the number of two-step ties with a negative product of signs;
+* `balance_pos`: the number of two-step ties with a positive product of signs.
+
+```{r fragment1plot3}
+# snapshot from dynamic network in Break 1 for statement by Lauren to Omar at time 22:28.
+# create the network plot for this time point
+ggraph(net_layout) +
+  geom_edge_link(
+    aes(filter = (dyntie == "Friendship")),
+    colour = "grey",
+    alpha = 0.7,
+    edge_width = 2.3
+  ) +
+  geom_edge_link(
+    aes(filter = (dyntie == "Playmate")),
+    colour = "black",
+    edge_width = 0.7
+  ) +
+  geom_edge_fan(
+    aes(
+      filter = (dyntie == "Utterance"),
+      alpha = (onset + 5 - 22.4615385)/5,
+      colour = negative
+    ),
+    show.legend = FALSE,
+    arrow = arrow(angle = 30, length = unit(3, "mm"), type = "closed"),
+    end_cap = circle(4, 'mm'),
+    edge_width = 1.3
+  ) +
+  geom_node_point(
+    aes(fill = ethnicity, shape = ifelse(sex == 1, "girl", "boy")),
+    size = 6
+  ) +
+  geom_node_text(aes(label = label), nudge_y = 0.1, vjust = 0, size = 3) +
+  geom_text(
+    label = paste0("Time ",
+                   format(trunc(max(edges$onset)), width = 2), ":",
+                   formatC(round(60 * (max(edges$onset) %% 1)),
+                           flag = "0", width=2)),
+    x = max(net_layout$x), y = max(net_layout$y),
+    hjust = 1, #aligned left
+    vjust = 0, #aligned bottom
+    size = 4
+  ) +
+  scale_edge_alpha("Edge direction", guide = "none") +
+  scale_shape_manual(name = "Sex", values = c(22, 21)) +
+  scale_fill_brewer(name = "Ethnicity", type = "div", palette = 1) +
+  guides(fill = guide_legend(override.aes=list(shape=21))) + #bug fix
+  scale_alpha(range = c(0.4, 0.8)) + #relative loudness, not absolute due to automatic rescaling
+  scale_edge_color_manual(values = c(pred = brewercolors[["Blue"]], neg = brewercolors[["Red"]], pos = brewercolors[["Green"]])) +
+  theme_void()
+```
+
+<div class="question">
+Exercises
+
+1. Use the above figure to manually calculate the value of the `balance_neg` and `balance_pos` variables that we use to predict the valence (positive versus negative) for Lauren's (blue) statement to Omar.
+
+2. Which valence does balance theory predict for this statement?
+</div>
+
+## Predicting tie valence in R
+
+Now that we understand the dependent/outcome variable and the independent/predictor variables, let us execute the analysis in R.
+
+Because the dependent variable (`negative`) has only two values (1 = negative, 0 = positive), we can use logistic regression analysis.
+
+```{r logistic1, exercise = TRUE}
+# Estimate (the probability of) statement negativity.
+model1 <- glm(
+  negative ~ sex_from + adhd_to + simil_ethn + friend + received_neg + balance_neg,
+  data = utterances,
+  family = binomial(link = "logit")
+)
+# Summarise results.
+summary(model1)
+# Confidence intervals.
+confint(model1)
+```
+
+<div class="question">
+Exercises
+
+1. Run the code and interpret the effects of `sex_from`, `adhd_to`, `simil_ethn`, and `friend`. Tip: Use the command `?utterances` to see the description of these variables; the description will open in a new browser window.
+
+2. Do pupils tend to reciprocate negative incoming statements according to these results? Or does the effect of `received_neg` have the wrong sign?
+
+3. Do pupils tend to follow balance theory?
+</div>
+
+### 
+
+### Interpreting results
+
+In Session 3, we learned that effects in a logistic regression model are difficult to interpret because they predict changes in the log odds. We learned to use the `predict()` function to obtain predicted probabilities. In our present example, we predict probabilities of making a negative statement (in stead of a positive statement). Remember, `1` on variable `negative` stands for a negative statement!
+
+```{r predict1, exercise = TRUE, exercise.lines = 19}
+# Estimate (the probability of) statement negativity.
+model1 <- glm(
+  negative ~ sex_from + adhd_to + simil_ethn + friend + received_neg + balance_neg,
+  data = utterances,
+  family = binomial(link = "logit")
+)
+# Get predicted adoption probabilities for boys and girls who make the statement. 
+predict(
+  model1, #the stored logistic regression results
+  data.frame( #enter the variables and values for which you want predictions:
+    sex_from = c(0, 0), #zero for boys, one for girls
+    adhd_to = c(1.13, 1.13), #both the addressed boy and girl have avergae ADHD level...
+    simil_ethn = c(1, 1), #speaker and addressee have the same ethnicity
+    friend = c(0, 0), #but they are not friends
+    received_neg = c(0, 1), #the speaker did not receive previous negative statements from the addressee
+    balance_neg = c(0, 0) #and their are no negative two-step ties between them
+  ),
+  type = "response" #gives probabilities not log odds
+)
+```
+
+<div class="question">
+Exercises
+
+1. The above code shows the predicted probabilities for boys and girls (having otherwise the same characteristics). Run the code and interpret the result.
+
+2. Change the code to see the effects of same versus different ethnicity. Interpret the result.
+
+3. Change the code to see the effects of being friends versus not being friends. Interpret the result.
+
+4. Change the code to see the effects of having received a negative statement from the addressee (coded `1`) versus not having received such a statement (coded `0`). Interpret the result.
+
+5. Change the code to see the effects of having one negative two-step tie between speaker and addressee versus having no (zero) of such two-step ties. Interpret the result.
+</div>
+
+### 
+
+In the estimated model, the predicted probability of a negative statement is higher for a pupil who received a negative statement from the addressee (`received_neg = 1`) than for a pupil who did not receive such a statement (`received_neg = 0`; all other things equal).
+
+This is in line with the fact that the negative reciprocity effect was positive, because:
+
+* The higher value (`1` versus `0`) on the dependent/outcome variable (`negative`) represents a negative statement;
+* A higher value (`1` versus `0`) on the (negative) reciprocity predictor variable (`received_neg`) represents receiving a previous negative statement.
+* So a positive effect predicts a higher probability of a negative statement if the the (negative) reciprocity predictor variable is higher.
+
+If one of the two variables is coded differently (in the opposite direction), a negative effect would have indicated reciprocity.
+
+<div class="tip">
+* Avoid interpreting the effects (regression coefficients) in a logistic regression model.
+* Interpret predicted probabilities.
+</div>
+
+### Cross-nested multilevel model
+
+But wait a minute, we have repeated observations for a pupil making a statement, don't we? Pupils may make more than one statement, and each statement is an observation (row) in our data set. 
+
+Shouldn't we correct for this with a multilevel model, as we earned in Session 2? Yes, we should!
+
+In addition, we also have repeated observations for a pupil receiving a statement. A pupil may receive more than one statement during the break. We should also correct for this in our multilevel model.
+
+A model with random (varying) effects for the pupil sending and the pupil receiving a statement is an example of a <i class="question">cross-nested multilevel model</i>.
+
+```{r logistic2, exercise = TRUE}
+# Ensure that the lme4 package is loaded.
+library(lme4)
+# Estimate (the probability of) statement negativity.
+model2 <- glmer(
+  negative ~ sex_from + adhd_to + simil_ethn + friend + received_neg + balance_neg + (1 | from) + (1 | to),
+  data = utterances,
+  family = binomial(link = "logit")
+)
+# Summarise results.
+summary(model2)
+# Confidence intervals.
+confint(model2)
+```
+
+<div class="question">
+Exercise
+
+1. Run the code and compare the _p_ values (`Pr(>|z|)`) of the fixed effects to those estimated before without multilevel model.
+</div>
+
+### 
+
+Cross-nested logistic regression models are usually difficult to estimate. The approximation used by the `glmer()` function (in the `lme4` package) does not have to be very good.
+
+If you want to use a cross-nested logistic regression model in your own research, it is better to use Bayesian estimation using the `rstanarm` package. 
+
+Finally, it is not clear how we can correct for repeated measurements with a multilevel model if we cannot distinguish between sender and receiver of the tie (that is, with an undirected relation).
 
 ## Conclusion
 
+In this session, we have started predicting aspects of network structure, namely, characteristics of network ties.
 
+We learned that:
+
+* Pairs of network nodes are our observations;
+* To formulate and test hypotheses about effects on a tie characteristic, we can use:
+    + Characteristics of the two nodes; 
+    + (Dis)similarities of these characteristics; 
+    + Ties on other relations; 
+    + Previous ties, possibly including more network nodes than the sender and receiver (reciprocity, structural balance).
+* We can (again) use logistic regression.
+* We may have to control for repeated measurements for both nodes with a cross-nested multilevel model.
+
+In this session, we have assumed that the ties exist. We have analyzed the valence (positive versus negative) of statements under the condition that the statements were made.
+
+In the next session, we turn to the presence versus absence of ties. Can we predict that a pupil says something to another pupil or starts playing with another pupil at a particular moment? 
 
 ## Further Reading
 
-- 
+- Balance theory was formulated by Fritz Heider: Heider, F. (1946). Attitudes and cognitive organization. _Journal of Psychology_, 21, 107–112. Heider, F. (1958). _The Psychology of Interpersonal Relations_. John Wiley and Sons.
+- Dorwin Cartwright and Frank Harary developed the concept of structural balance: Cartwright, D., & Harary, F. (1956). Structural balance: A generalisation of Heider’s Theory. _Psychological Review_, 63, 277–293.
+- Some of my applications of structural balance: 
+  + de Nooy, W. (1999). A literary playground. Literary criticism and balance theory. _Poetics_, 26(5/6), 385–404. 
+  + de Nooy, W. (2006). Stories, Scripts, Roles, and Networks. _Structure and Dynamics: EJournal of Anthropological and Related Sciences_, 1(2), 22.
+  + de Nooy, W. (2008). Signs over time: Statistical and visual analysis of a longitudinal signed network. _Journal of Social Structure_, 9(1). http://www.cmu.edu/joss/content/articles/volume9/DeNooy/ (about literary criticism)
+  + de Nooy, W., & Kleinnijenhuis, J. (2013). Polarization in the Media During an Election Campaign: A Dynamic Network Model Predicting Support and Attack Among Political Actors. _Political Communication_, 30(1), 117–138. https://doi.org/10.1080/10584609.2012.737417
+  + Kleinnijenhuis, J., & De Nooy, W. (2013). Adjustment of issue positions based on network strategies in an election campaign: A two-mode network autoregression model with cross-nested random effects. _Social Networks_, 35(2), 168–177. https://doi.org/10.1016/j.socnet.2011.03.002
+- For a concise manual to using Bayesian estimation in the `rstanarm` package, read: Muth, C., Oravecz, Z., & Gabry, J. (2018). User-friendly Bayesian regression modeling: A tutorial with rstanarm and shinystan. _The Quantitative Methods for Psychology_, 14(2), 99–119. https://doi.org/10.20982/tqmp.14.2.p099
 
 ## Appendix: Data preparation
 
 This is an advanced topic that you should probably only study if you start working with your own data.
 
-Once you master reading the R code, you can see the exact way variables have been measured. You may want to change this. For example, take into account all utterances in the preceding 3 or 5 minutes instead of only the last.
+Once you master reading the R code, you can see the exact ways in which variables have been measured. You may want to change this. For example, you may want to take into account all utterances in the preceding 3 or 5 minutes instead of only the last.
 
 ```{r utterancesConstruct, eval=FALSE, echo=TRUE}
 # Construct data set utterances with utterance valence (variable `negative`) as
