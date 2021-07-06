@@ -231,7 +231,7 @@ Previous Session: Hypothesize behaviour of sender towards recipient (of the rela
 
 Introduction to:
 
-1. Who will select whom next (given that there is a next relational event)? Combination of two processes: (a) who is going to act when? and (b) the action is directed towards whom? Possibly, a third process: (c) what is the nature of the action? 
+1. Who will select whom next (given that there is a next relational event)? Combination of two/three processes: (a) who is going to act when? and (b) the action is directed towards whom? Possibly, a third process: (c) what is the nature of the action? 
 
 2. With the types of predictors discussed in the previous session: @@.
 
@@ -243,7 +243,7 @@ Introduction to:
 
 6. Other special cases: incomplete risk sets. The sender or the recipient is fixed (exogeneous), e.g., a child is asked to choose a team. Risk set as eligible senders and/or recipients. We ask: Given that there is an action by sender (or towards recipient), why was this recipient/sender chosen?. Construction of cases.
 
-7. Wrapping it up: Regression models for time-stamped network data require dealing with time (when does something happen?) and pairs (between whm does it happen?). What do you consider to be externally fixed, what do you want to predict: whether/when/how a person's charasteristic changes or whether/when/how/by whom/to whom an (inter)action appears?
+7. Wrapping it up: Regression models for time-stamped network data require dealing with time (when does something happen?) and pairs (between whom does it happen?). What do you consider to be externally fixed, what do you want to predict: whether/when/how a person's characteristic changes or whether/when/how/by whom/to whom an (inter)action appears?
 
 8. `RSiena::` for panel wave data (only mention and give references).
 

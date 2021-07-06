@@ -521,7 +521,8 @@ lastplayedNetwork <- defineNetwork(nodes = playmates, directed = FALSE)
 # labels that occur in data frame actors.
 # Time can be POSIXct, integer, and numeric(with decimals?)
 # Increment: create (1) or dissolve (-1) action (numeric).
-# Instead of increment: replace, which updates the value of an attribute or tie (pair)?
+# Instead of increment: replace, which updates the value of an attribute or tie
+# (pair)?
 # select and adjust the playmate events
 # How do we specify right-censoring? Just don't add the terminating event?
 # Note: onset and terminus must become different rows.
@@ -600,7 +601,7 @@ summary(model_play)
 # copy pairs_dyn for backup
 pairs_dyn_playmates <- pairs_dyn
 
-#reset pairs_dyn to mileston
+#reset pairs_dyn to milestone
 pairs_dyn <- pairs_dyn_playmates
 
 # Generate utterances ####
@@ -2264,6 +2265,155 @@ rm(help_utterances, playmates_dyn, received_utterance, semi_paths)
 #save to package data directory
 save(utterances, file = "data/utterances.RData")
 
+# Data Session 6: predicting statements and playmate ties####
+
+# Create the data sets for predicting statements and playmate ties with the
+# goldfish package.
+
+# Step 1: The node set and time-constant node characteristics or starting values for time-varying node characteristics.
+# - Nodes are identified by textual labels (required).
+# - variable 'present' (required) indicates if a pupil was already present at
+#   the first time point.
+# - Add time-constant node characteristics or starting values for time-varying
+#   node characteristics (if any). These can be used as attributes in the
+#   construction of predictors.
+# The basic data set pupils_const contains all information.
+nodes_pupils <- pupils_const %>%
+  #sort by label to ensure the same order in all networks
+  arrange(label) %>%
+  #select relevant variables.
+  select(label, present, sex, ethnicity, adhd)
+# Turn the data frame into a nodes.goldfish data object.
+nodes_pupils <- defineNodes(nodes = nodes_pupils)
+
+# Step 2: The changes to node attributes (if any, optional) over time.
+# We do not have time-varying node attributes.
+# If we had, we should ave used the linkEvents() function with arguments
+# changeEvents and attribute.
+
+# Step 3. The static or starting networks.
+# One network for each type of tie or event. One of these is the
+# dependent/outcome network, all can be used as independent/predictor networks.
+# All networks must have the same nodes as the nodes set and ordered as in the
+# nodes set created in Step 1.
+# - The initially empty directed network of statements.
+net_statements <- defineNetwork(nodes = nodes_pupils, directed = TRUE)
+# - The initially empty undirected network of playmates.
+net_playmates <- defineNetwork(nodes = nodes_pupils, directed = FALSE)
+# - The static undirected network of friendships.
+#   For a static network, create a 0/1 matrix with rows and columns in the same
+#   order as in the list of nodes.
+#   The matrix columns must have the node labels as dimnames, but the rows do
+#   not need to have dimnames.
+friends_matrix <- pairs_const %>%
+  #keep only the sender and receiver
+  select(from, to, friend) %>%
+  #add labels to IDs (so goldfish can match the matrix to the nodes)
+  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
+  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
+  #label.x is sender, label.y is receiver: sort to match the nodes
+  arrange(label.x, label.y) %>%
+  #put 'to' values in columns
+  pivot_wider(
+    id_cols = label.x,
+    names_from = label.y, #receiver provides the new columns (variables)
+    values_from = friend, #variable friend indicates 0/1 friendship
+    values_fill = 0, #replace missing values (e.g., on the diagonal) by 0
+    names_sort = TRUE #ensure that the columns are in the correct order
+  ) %>%
+  #drop the from variable (row 1 has ID 1, etc.)
+  select(-label.x) %>%
+  #turn into a matrix
+  as.matrix()
+# create the undirected network of friendships
+net_friends <- defineNetwork(matrix = friends_matrix, nodes = nodes_pupils, directed = FALSE)
+# Cleanup.
+rm(friends_matrix)
+
+# Step 4. The events that happen to the networks.
+# Create a list of events for each network, indicating when an event starts or
+# stops. Note: event start and end must become different rows (observations).
+# One of these lists contains the events that we want to predict.
+# Each events list must contain the variables:
+# - time: POSIXct, integer, or numeric (with decimals),
+# - sender: character label that occurs in nodes_pupils,
+# - receiver: character label that occurs in nodes_pupils,
+# - increment: create (1) or dissolve (-1) event (numeric). Instead of
+#   increment: replace, which updates the value of an attribute or tie (pair)?
+
+# A. statement events
+events_statements <- pairs_dyn %>%
+  #select utterances in Break 1
+  filter(dyntie == "Utterance" & breakID == 1) %>%
+  #add labels to IDs (so goldfish can match the matrix to the nodes)
+  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
+  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
+  #rename onset and terminus
+  rename(
+    onset.time = onset,
+    terminus.time = terminus
+  ) %>%
+  #stack onset and terminus
+  pivot_longer(
+    cols = onset.time:terminus.censored,
+    names_to = c("type", ".value"),
+    names_sep = "\\.",
+    values_drop_na = TRUE
+  ) %>%
+  #filter out censored end times (in case we want to predict end times)
+  filter(!censored | type == "onset") %>%
+  #recode increment into 1 for onset and -1 for terminus
+  mutate(increment = ifelse(type == "onset", 1, -1)) %>%
+  #select and rename relevant variables
+  select(time, sender = label.x, receiver = label.y, increment) %>%
+  #order by time
+  arrange(time) %>%
+  #a tibble throws a warning (in tutorial): Unknown or uninitialised column: `replace`.
+  as.data.frame()
+# link events to the network
+net_statements <- linkEvents(x = net_statements, changeEvents = events_statements, nodes = nodes_pupils)
+
+# B. playmate events
+events_playmates <- pairs_dyn %>%
+  #select playmate cases in Break 1 and only one row for each pair (undirected data)
+  filter(dyntie == "Playmate" & breakID == 1 & from < to) %>%
+  #add labels to IDs (so goldfish can match the matrix to the nodes)
+  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
+  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
+  #rename onset and terminus
+  rename(
+    onset.time = onset,
+    terminus.time = terminus
+  ) %>%
+  #stack onset and terminus
+  pivot_longer(
+    cols = onset.time:terminus.censored,
+    names_to = c("type", ".value"),
+    names_sep = "\\.",
+    values_drop_na = TRUE
+  ) %>%
+  #filter out censored end times (there aren't any)
+  filter(!censored | type == "onset") %>%
+  #recode increment into 1 for onset and -1 for terminus
+  mutate(increment = ifelse(
+    type == "onset", 1, -1
+  )) %>%
+  #select and rename relevant variables
+  select(time, sender = label.x, receiver = label.y, increment) %>%
+  #order by time
+  arrange(time) %>%
+  #a tibble throws a warning (in tutorial): Unknown or uninitialised column: `replace`.
+  as.data.frame()
+# link events to the network
+net_playmates <- linkEvents(x = net_playmates, changeEvents = events_playmates, nodes = nodes_pupils)
+
+#save all data objects to package data directory
+save(nodes_pupils, file = "data/nodes_pupils.RData")
+save(net_statements, file = "data/net_statements.RData")
+save(net_playmates, file = "data/net_playmates.RData")
+save(net_friends, file = "data/net_friends.RData")
+save(events_statements, file = "data/events_statements.RData")
+save(events_playmates, file = "data/events_playmates.RData")
 
 
 # PROBLEM: `ndtv::` (and `networkDynamic::`) ####

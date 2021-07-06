@@ -6,7 +6,7 @@ output:
     allow_skip: true
 runtime: shiny_prerendered
 description: >
-  Regression basics, exposure, and our first analyses of pupil loudness.
+  Different types of variables for predicting tie valence and how to estimate their effects with logistic regression'.
 ---
 
 ```{r setup, include=FALSE}
@@ -276,8 +276,8 @@ The four questions in the preceding sub-topic represent different types of effec
 * <i class="question">Sender-effect</i>: Effect of a characteristic of the sender of a tie. Example: Do girls on average make more or less negative statements to others?
 * <i class="question">Receiver-effect</i>: Effect of a characteristic of the receiver of a tie. Example: Do boys on average attract more or less negative statements from others?
 * <i class="question">(Dis)similarity effect</i>: Effect of a variable indicating whether sender and receiver have the same characteristic. Example: Do pupils tend to make more positive statements to peers with the same ethnicity than to pupils of other ethnicity?
-* <i class="question">Other tie effect</i>: Effect of the presence or value of another relation between sender and receiver. Example: Do friends tend to receive more positive statements than pupils who are not friends?
-* <i class="question">Same tie effect</i>: Effect of the presence or value of previous ties between sender and receiver on the same relation as the predicted tie. For example: Valence of the statements between Lauren and Omar in the preceding 5 minutes. If the network is directed (arcs/arrows), we distinguish between:
+* <i class="question">Other relation effect</i>: Effect of the presence or value of a tie on another relation between sender and receiver. Example: Do friends tend to receive more positive statements than pupils who are not friends?
+* <i class="question">Same relation effect</i>: Effect of the presence or value of previous ties between sender and receiver on the same relation as the predicted tie. For example: Valence of the statements between Lauren and Omar in the preceding 5 minutes. If the network is directed (arcs/arrows), we distinguish between:
     + <i class="question">Repetition/replication</i>: Presence or characteristics of a previous tie from sender to receiver. Example: a previous statement by Lauren to Omar.
     + <i class="question">Reciprocity</i>: Presence or characteristics of a previous tie in de opposite direction, from receiver to sender. Example: a previous statement by Omar to Lauren.
 * <i class="question">Local network context effect</i>: Effect of the presence or value of network structures including (at least) a third node. Example: Does Lauren adjust the valence of her statement to the fact that Lauren had positive exchanges with Cambrie and Trevor, who said negative things to Omar?
@@ -308,7 +308,7 @@ Exercises
 
 It is relatively straightforward to construct independent variables for sender, receiver, and (dis)similarity effects: Just add the characteristics for sender and receiver or the difference.
 
-Predictors for effects of other ties (friendship, playmate) just include the Yes(1)/No(0) variable used to register friendships and playmates in the basic data sets for pairwise (= lines) information: `pairs_const` and `pairs_dyn`.
+Predictors for effects of other relations (friendship, playmate) just include the Yes(1)/No(0) variable used to register friendships and playmates in the basic data sets for pairwise (= lines) information: `pairs_const` and `pairs_dyn`.
 
 ```{r basicdatacheck, exercise = TRUE}
 # Just issue the name of a data set to show its contents.
@@ -361,7 +361,7 @@ Exercises
 
 ### Balance (local network context)
 
-Effects including a third node (pupil) are typical for network analysis. Many effects are possible. Transitivity, which we will encunter in Session 6, is just one of them.
+Effects including a third node (pupil) are typical for network analysis. Many effects are possible. Transitivity, which we will encounter in Session 6, is just one of them.
 
 Let us focus on one example for a relation that is positive or negative: <i class="question">structural balance</i>. 
 
@@ -649,7 +649,7 @@ This is an advanced topic that you should probably only study if you start worki
 
 Once you master reading the R code, you can see the exact ways in which variables have been measured. You may want to change this. For example, you may want to take into account all utterances in the preceding 3 or 5 minutes instead of only the last.
 
-```{r utterancesConstruct, eval=FALSE, echo=TRUE}
+```{r utterancesConstruct, exercise=TRUE}
 # Construct data set utterances with utterance valence (variable `negative`) as
 # dependent/outcome variable and different types of independent/predictor
 # variables:
@@ -667,6 +667,8 @@ playmates_dyn <- pairs_dyn %>%
   filter( dyntie == "Playmate" & breakID == 1 ) %>%
   #only keep relevant variables (and rename onset and terminus)
   select(from, to, onset_play = onset, terminus_play = terminus)
+print("Showing data set playmates_dyn:")
+playmates_dyn
 
 # Helper table: utterances received by speaker from addressee (for reciprocity
 # effect).
@@ -695,6 +697,8 @@ received_utterance <- pairs_dyn %>%
   summarise(valence_received = last(negative.y), .groups = "drop") %>%
   #rename onset.x
   rename(onset = onset.x)
+print("Showing data set received_utterance:")
+received_utterance
 
 # Helper files for analyzing the effects of structural balance: the number of
 # balanced semicycles (of length 3) created by a negative utterance and the
@@ -755,6 +759,8 @@ semi_paths <- help_utterances %>%
     balance_pos = sum(sign == 1), #number of semipaths with positive sign
     .groups = "drop"
     )
+print("Showing data set semi_paths:")
+semi_paths
 
 # Construct the analysis data set.
 utterances <- pairs_dyn %>%
@@ -814,7 +820,9 @@ utterances <- pairs_dyn %>%
   #add variables for time-constant similarities and friendships between speaker
   #and addressee
   left_join(pairs_const, by = c("from" = "from", "to" = "to"))
+print("Showing data set utterances:")
+utterances
+
 # cleanup helper data
 rm(help_utterances, playmates_dyn, received_utterance, semi_paths)
-
 ```

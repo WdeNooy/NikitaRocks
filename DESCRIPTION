@@ -17,6 +17,8 @@ Depends:
     RColorBrewer
 Imports: 
     shiny,
+    igraph,
     ggraph,
-    lme4
+    lme4,
+    remotes
 RoxygenNote: 7.1.1
