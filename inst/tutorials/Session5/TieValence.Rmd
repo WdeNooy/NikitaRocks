@@ -201,7 +201,7 @@ Exercises
 
 ### Effects on tie valence
 
-A tie is equal to a pair of nodes. For lines, the order of nodes (from versus to) does not matter, but the order matters for arcs (arrows). Instead of analyzing characteristics of nodes (pupils), we are now going to analyze a characteristic of pairs of nodes. In our example, whether a statement is positive or negative.
+A tie is equal to a pair of nodes. For lines, the order of nodes (from versus to) does not matter, but the order matters for arrows (arcs). Instead of analyzing characteristics of nodes (pupils), we are now going to analyze a characteristic of pairs of nodes. In our example, whether a statement is positive or negative.
 
 How can we predict if Lauren's statement on Omar (blue arrow) is positive or negative from the information that we have?
 

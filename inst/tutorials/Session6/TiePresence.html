@@ -131,7 +131,7 @@ $(document).ready(function () {
 <div id="section-who-will-speak-to-whom" class="section level2">
 <h2>Who will speak to whom?</h2>
 <p>In the preceding sessions, we have tried to predict a characteristic of a tie, namely, whether a statement from one pupil to another was positive or negative.</p>
-<p>we have assumed but not predicted that the ties (statements) exist. In the current session, we try to predict the presence versus absence of ties. Can we predict that a pupil says something to another pupil or starts playing with another pupil at a particular moment?</p>
+<p>we have assumed but not predicted that the ties (statements) exist. In the current session, we try to predict the presence versus absence of ties, more exactly, the events that ties appear (or disappear). Can we predict that a pupil says something to another pupil or starts playing with another pupil at a particular moment?</p>
 <p>Basically, we are addressing network change: Can we predict how the structure of a network changes?</p>
 <p><img src="TiePresence_files/figure-html/fragment1plot1-1.png" width="50%" /><img src="TiePresence_files/figure-html/fragment1plot1-2.png" width="50%" /></p>
 <p>The prediction problem consists of two steps and models:</p>
@@ -139,23 +139,29 @@ $(document).ready(function () {
 <li>Predict who will act: the rate model. Actually, how often or how soon pupils act.</li>
 <li>Predict towards whom will be acted: the (receiver) choice model.</li>
 </ol>
-<p>Note that there is a third step, namely predicting the characteristics of a tie once we know who will send and receive the tie. We discussed this step in Session 5 (predicting tie valence).</p>
+<p>Note that there is a third step, namely predicting the characteristics of an action (such as maintaining a tie) once we know who will send and receive the action. We discussed this step in Session 5 (predicting tie valence).</p>
 </div>
 <div id="section-install-the-goldfish-package" class="section level2">
 <h2>Install the <code>goldfish</code> package</h2>
-<p>We use the <code>goldfish</code> package to estimate models for predicting tie creation.</p>
-<div class="tutorial-exercise" data-label="installGoldfish" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
-<pre class="text"><code># Use this command to install the goldfish package from github.
+<p>We use the <code>goldfish</code> package to estimate models for predicting interactions or tie creation/dissolution.</p>
+<pre class="r"><code># COPY THIS COMMANDS TO THE RStudio CONSOLE AND RUN IT THERE. This will install the goldfish package from github.
 remotes::install_github(&quot;snlab-ch/goldfish&quot;)
 # Note: this requires the remotes package, which should be installed
 # automatically when you install the NikitaRocks package.</code></pre>
-<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
-</div>
 <div class="question">
 <p>Exercises</p>
 <ol style="list-style-type: decimal">
-<li><p>Run the above code to install the <code>goldfish</code> package.</p></li>
-<li><p>Replace the code by <code>?goldfish</code> and run this (should open new browser window with general info on the package), to check that installation was successful.</p></li>
+<li>Run the above code in the RStudio console to install the <code>goldfish</code> package.</li>
+</ol>
+<div class="tutorial-exercise" data-label="loadGoldfish" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># Load the goldfish package.
+library(goldfish)
+# And check correct installation and loading.
+?goldfishEffects</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<ol start="2" style="list-style-type: decimal">
+<li>Run the above code. This should open new browser window with general info on the package.</li>
 </ol>
 </div>
 <p>For installation problems (particularly on Mac OSX), consult <a href="https://github.com/snlab-ch/goldfish" class="uri">https://github.com/snlab-ch/goldfish</a> (<a href="https://github.com/snlab-ch/goldfish#installing-openmp-on-mac-osx" class="uri">https://github.com/snlab-ch/goldfish#installing-openmp-on-mac-osx</a>).</p>
@@ -218,7 +224,7 @@ remotes::install_github(&quot;snlab-ch/goldfish&quot;)
 </tr>
 <tr class="odd">
 <td align="left">Other relation:</td>
-<td align="left">tie(network)</td>
+<td align="left">tie(network, weighted = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency to create an event from sender to receiver if a tie from sender to receiver exists in another relation (covariate network)</td>
 <td align="center">choice</td>
 </tr>
@@ -230,13 +236,13 @@ remotes::install_github(&quot;snlab-ch/goldfish&quot;)
 </tr>
 <tr class="odd">
 <td align="left">- repetition</td>
-<td align="left">inertia(network)</td>
+<td align="left">inertia(network, weighted = FALSE, window = Inf)</td>
 <td align="left">tendency to create an event from sender to receiver if this event happened before; tendency to update existing ties rather than creating new ones</td>
 <td align="center">choice</td>
 </tr>
 <tr class="even">
 <td align="left">- reciprocity</td>
-<td align="left">recip(network)</td>
+<td align="left">recip(network, weighted = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency to create an event from sender to receiver if receiver sent events to sender before</td>
 <td align="center">choice (one-mode only)</td>
 </tr>
@@ -248,37 +254,37 @@ remotes::install_github(&quot;snlab-ch/goldfish&quot;)
 </tr>
 <tr class="even">
 <td align="left">- transitivity</td>
-<td align="left">trans(network)</td>
+<td align="left">trans(network, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency to create an event from sender to receiver if it closes two-paths (sender-&gt;tertius-&gt;receiver) in the past events network</td>
 <td align="center">choice (one-mode only)</td>
 </tr>
 <tr class="odd">
 <td align="left">- transitivity via two relations</td>
-<td align="left">mixedTrans(list(network1, network2))</td>
+<td align="left">mixedTrans(list(network1, network2), window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency to create an event from sender to receiver if it closes two-paths with events (sender-&gt;tertius) in network1 and (tertius-&gt;receiver) in network2 in the past events</td>
 <td align="center">choice (one-mode only)</td>
 </tr>
 <tr class="even">
 <td align="left">- four cycle</td>
-<td align="left">four(network, isTwoMode)</td>
+<td align="left">four(network, isTwoMode = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency to create an event from sender to receiver if they are connected via two intermediaries in the past events network</td>
 <td align="center">choice</td>
 </tr>
 <tr class="odd">
 <td align="left">- embeddedness</td>
-<td align="left">node_trans(network, isTwoMode)</td>
+<td align="left">node_trans(network, isTwoMode = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency of an actor to create an event when s/he is the source in more transitive triangles (source-&gt;tertius-&gt;alter&lt;-source)</td>
 <td align="center">rate</td>
 </tr>
 <tr class="even">
 <td align="left">- popularity (indegree)</td>
-<td align="left">indeg(network, isTwoMode)</td>
+<td align="left">indeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">rate model: tendency of an actor to create an event when s/he has received many events (same or other relation); choice model: tendency of an actor to be selected as event receiver when s/he has received many events (same or other relation)</td>
 <td align="center">rate &amp; choice</td>
 </tr>
 <tr class="odd">
 <td align="left">- activity (outdegree)</td>
-<td align="left">outdeg(network, isTwoMode)</td>
+<td align="left">outdeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">rate model: tendency of an actor to create an event when s/he has sent many events (same or other relation); choice model: tendency of an actor to be selected as event receiver when s/he has sent many events (same or other relation)</td>
 <td align="center">rate &amp; choice</td>
 </tr>
@@ -290,13 +296,13 @@ remotes::install_github(&quot;snlab-ch/goldfish&quot;)
 </tr>
 <tr class="odd">
 <td align="left">- connection to ‘rich’ neighbours</td>
-<td align="left">tertius(network, attribute, isTwoMode)</td>
+<td align="left">tertius(network, attribute, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency of actors to be more active (rate model) or be selected (choice model) when their (incoming) network neighbours have (aggregated) higher values on the selected attribute</td>
 <td align="center">rate &amp; choice</td>
 </tr>
 <tr class="even">
 <td align="left">- connection to similar neighbours</td>
-<td align="left">tertius_diff(network, attribute, isTwoMode)</td>
+<td align="left">tertius_diff(network, attribute, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</td>
 <td align="left">tendency of actors to be more active (rate model) or be selected (choice model) when their (incoming) network neighbours have more similar (?) values on the selected attribute</td>
 <td align="center">rate &amp; choice</td>
 </tr>
@@ -315,30 +321,32 @@ remotes::install_github(&quot;snlab-ch/goldfish&quot;)
 </div>
 <div id="section-section-1" class="section level3">
 <h3></h3>
-<p>Some important additional arguments for predictor construction:</p>
+<p>Arguments for predictor construction:</p>
 <ul>
-<li><code>window</code>: Allows the user to set the length of the preceding <i class="question">time window</i> within which network ties/events are used to calculate the predictor. By default, all preceding ties or events are used (<code>Inf</code> for infinity).</li>
-<li><code>weighted</code>: If set to <code>TRUE</code>, only checks the presence of the searched tie/event(s) (1 = Yes, 0 = No). If <code>FALSE</code> (default), counts the searched tie/event(s).</li>
-<li><code>isTwoMode</code>: For some effects, th euser must specify whether the network is two-mode (<code>isTwoMode = TRUE</code>) or one-mode (<code>isTwoMode = FALSE</code>, default).</li>
+<li><code>isTwoMode</code>: For some effects, we must specify whether the network is two-mode (<code>isTwoMode = TRUE</code>) or one-mode (<code>isTwoMode = FALSE</code>, default).</li>
+<li><code>weighted</code>: If set to <code>TRUE</code>, only checks the presence of the searched tie/interaction(s) (1 = Yes, 0 = No). If <code>FALSE</code> (default), counts the searched tie/interaction(s).</li>
+<li><code>window</code>: Allows the user to set the length of the preceding <i class="question">time window</i> within which network ties/interactions are used to calculate the predictor. By default, all preceding ties or interactions are used (<code>Inf</code> for infinity).</li>
+<li><code>ignoreRep</code>: If an actor sends more than one tie/interaction to a receiver within the time window, take into account only the first tie/interaction (<code>ignoreRep = TRUE</code>) or all ties/interactions (<code>ignoreRep = FALSE</code>, default)</li>
 </ul>
 </div>
 </div>
-<div id="section-data-preparation-for-the-goldfish-package" class="section level2">
-<h2>Data preparation for the <code>goldfish</code> package</h2>
-<p>Before we can estimate a model, we must create data objects in several steps:</p>
+<div id="section-data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>Before we can estimate a model with the <code>goldfish</code> package, we must create data objects in several steps:</p>
 <ol style="list-style-type: decimal">
 <li>The node set and time-constant node characteristics or starting values for time-varying node characteristics.</li>
 <li>The changes to node attributes (if any, optional) over time.</li>
-<li>The static or starting networks. One network for each type of tie or event. One of these is the dependent/outcome network, all can be used as independent/predictor networks. All networks must have the same nodes as the nodes set and ordered as in the nodes set.</li>
+<li>The static or starting networks. One network for each type of tie or interaction. One of these is the dependent/outcome network, all can be used as independent/predictor networks. All networks must have the same nodes as the nodes set and ordered as in the nodes set.</li>
 <li>The events that happen to the networks. Create a list of events for each network, indicating when an event starts or stops. One of these lists contains the events that we want to predict.</li>
 </ol>
 <p>The steps are explained in <em>Appendix: Data preparation</em>. As a result of these steps, we have:</p>
 <ol style="list-style-type: decimal">
-<li>A list of events that we want to predict: <code>events_statements</code>.</li>
+<li>A list of events that we want to predict: <code>events_dependent</code>.</li>
 <li>One or more networks that we can use to construct independent/predictor variables (see the previous topic):
 <ul>
 <li><code>net_friends</code>: static friendship relations amng pupils;</li>
-<li><code>net_playmates</code>: network of playmates at time 0 linked to <code>events_playmates</code>; +<code>net_statements</code>: network of statements at time 0 linked to <code>events_statements</code>.</li>
+<li><code>net_playmates</code>: network of playmates at time 0 linked to <code>events_playmates</code>;</li>
+<li><code>net_statements</code>: network of statements at time 0 linked to <code>events_statements</code>.</li>
 </ul></li>
 <li>A node list that may contain node characteristics, which can be used as attributes to construct independent/predictor variables (see the previous topic): <code>nodes_pupils</code> containing attributes <code>sex</code>, <code>ethnicity</code>, and <code>adhd</code>.</li>
 </ol>
@@ -358,29 +366,30 @@ as_tibble(nodes_pupils)</code></pre>
 </ol>
 </div>
 </div>
-<div id="section-estimation-with-the-goldfish-package" class="section level2">
-<h2>Estimation with the <code>goldfish</code> package</h2>
+<div id="section-estimating-the-sender-rate-model" class="section level2">
+<h2>Estimating the (sender) rate model</h2>
 <p>In Dynamic Network Actor Models (DyNAMs), the two models are estimated separately.</p>
 <p>Let us first estimate the rate model: Can we predict the speed at which pupils make statements?</p>
 <p>We can only use characteristics of the sending pupils to predict their statement speed (see the table in Topic <i class="question">Build-in types of predictors</i>):</p>
 <ul>
 <li>Sender effects (<code>ego(attribute)</code>);</li>
-<li>Sender’s popularity (<code>indeg(network, isTwoMode)</code>) and activity (<code>outdeg(network, isTwoMode)</code>);</li>
-<li>embeddedness in transitive fragments (<code>node_trans(network, isTwoMode)</code>);</li>
-<li>connection to ‘rich’ neighbours (<code>tertius(network, attribute, isTwoMode)</code>);</li>
-<li>connection to similar neighbours (<code>tertius_diff(network, attribute, isTwoMode)</code>).</li>
+<li>Sender’s popularity (<code>indeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>) and activity (<code>outdeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>embeddedness in transitive fragments (<code>node_trans(network, isTwoMode = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>connection to ‘rich’ neighbours (<code>tertius(network, attribute, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>connection to similar neighbours (<code>tertius_diff(network, attribute, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>).</li>
 </ul>
 <div class="tutorial-exercise" data-label="ratemodel1" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
 <pre class="text"><code># Estimate the rate at which pupils make statements.
 # Step 1: Define the dependent events
 events_dependent &lt;- defineDependentEvents(
-  events = events_statements[events_statements$increment == 1,], #the event list that should be considered as a dependent variable in models: only statement starts
+  events = events_statements[events_statements$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
   nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
   defaultNetwork = net_statements #name of a goldfish network object
 )
+# NOTE: Within the tutorial, changes to the code of Step 1 are ignored.
 # Step 2: Estimate the rate model.
 model_statement_rate &lt;- estimate(
-  events_dependent ~
+  events_dependent ~ 1 + #an intercept is not automatically added!
     ego(nodes_pupils$sex) + 
     ego(nodes_pupils$adhd) + 
     indeg(net_statements, isTwoMode = FALSE, weighted = TRUE, window = 3) +
@@ -388,54 +397,223 @@ model_statement_rate &lt;- estimate(
     model = &quot;DyNAM&quot;, subModel = &quot;rate&quot; #select the rate submodel
   )
 summary(model_statement_rate)</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.timelimit":180,"exercise.checker":"NULL"}</script>
+</div>
+<div class="question">
+<p>Exercises</p>
+<ol style="list-style-type: decimal">
+<li><p>Inspect the code of Step 2. Which effects are estimated and what do the arguments mean?</p></li>
+<li><p>Run the code (may take some time) and inspect the output (in the second output box). Interpret the signs (directions) of the coefficients: What speeds up making statements and what slows it down?</p></li>
+<li><p>Estimate some more models, adding/removing effects and changing arguments.</p></li>
+</ol>
+</div>
+<div id="section-interpreting-results" class="section level3">
+<h3>Interpreting results</h3>
+<p>Unfortunately, the <code>goldfish</code> package does not have <code>confint()</code> or <code>predict()</code> functions (at the moment of writing this tutorial).</p>
+<p>For our confidence in the sign (direction) of effects, we can use the stars printed next to the <code>Pr(&gt;|z|)</code> column in the results output. If there is at least one star, we are (95%) confident of the sign of the effect.</p>
+<p>In general we can say that:</p>
+<ul>
+<li>A positive effect ‘speeds up’ making statements, hence reduces the predicted waiting time between a pupil’s statements;</li>
+<li>A negative effect ‘slows down’ making statements, hence increases the predicted waiting time between a pupil’s statements;</li>
+</ul>
+<p>The size of effects are not easy to interpret. If you are eager to know, study the next subtopic. Otherwise, skip it.</p>
+</div>
+<div id="section-effect-size-details-only-for-enthusiasts" class="section level3">
+<h3>Effect size details (only for enthusiasts)</h3>
+<p>The model (for the curious: a Poisson regression model) predicts the logarithm of the rate at which pupils make statements.</p>
+<p>We must exponentiate an effect to get the predicted percentage change in the rate (for a 1 unit increase in the predictor).</p>
+<div class="tutorial-exercise" data-label="interpretrate1" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># For the original rate model:
+exp(coef(model_statement_rate))
+# If we take the inverse of the exponentiated effects, we get the predicted
+# percentage change in the waiting time between statements (for a 1 unit
+# increase in the predictor).
+1 / exp(coef(model_statement_rate))</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<p>Percentage change examples:</p>
+<ul>
+<li>1.099: a (100 * (1.099 - 1) =) 9.9 percent increase;</li>
+<li>0.845: a (100 * (1 - 0.845) =) 15.5 percent decrease.</li>
+</ul>
+<div class="question">
+<p>Exercise</p>
+<ol style="list-style-type: decimal">
+<li>Interpret the predicted percentage change in the rate and waiting time for the four predictor variables.</li>
+</ol>
+</div>
+</div>
+</div>
+<div id="section-estimating-the-receiver-choice-model" class="section level2">
+<h2>Estimating the (receiver) choice model</h2>
+<p>For predicting the receiver of the tie or interaction, we can use all predictors that include the receiver:</p>
+<ul>
+<li>Receiver effects (<code>alter(attribute)</code>);</li>
+<li>Exact similarity effects (<code>same(attribute)</code>);</li>
+<li>Approximate similarity effects: (<code>sim(attribute)</code>);</li>
+<li>Dissimilarity effects (<code>diff(attribute)</code>);</li>
+<li>Other relation effects (<code>tie(network, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Repetition effects (<code>inertia(network, weighted = FALSE, window = Inf)</code>);</li>
+<li>Reciprocity effects (<code>recip(network, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Transitivity effects (<code>trans(network, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Transitivity via two relations effects (<code>mixedTrans(list(network1, network2), window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Four cycle effects (<code>four(network, isTwoMode = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Popularity (indegree) effects (<code>indeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Activity (outdegree) effects (<code>outdeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Connection to ‘rich’ neighbours effects (<code>tertius(network, attribute, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>);</li>
+<li>Connection to similar neighbours effects (<code>tertius_diff(network, attribute, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE)</code>).</li>
+</ul>
+<div class="tutorial-exercise" data-label="choicemodel1" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># Estimate the receiver of the statements that pupils make.
+# Step 1: Define the dependent events. Same as rate model (see there).
+# Step 2: Estimate the choice model.
+model_statement_choice &lt;- estimate(
+  events_dependent ~ #do not use an intercept in a choice model!
+    sim(nodes_pupils$adhd) + 
+    tie(net_playmates, weighted = FALSE, window = 1, ignoreRep = TRUE) +
+    recip(net_statements, weighted = TRUE, window = 3, ignoreRep = FALSE),
+    model = &quot;DyNAM&quot;, subModel = &quot;choice&quot; #select the choice submodel
+  )
+summary(model_statement_choice)</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.timelimit":180,"exercise.checker":"NULL"}</script>
+</div>
+<div class="question">
+<p>Exercises</p>
+<ol style="list-style-type: decimal">
+<li><p>Inspect the code of Step 2. Which effects are estimated and what do the arguments mean?</p></li>
+<li><p>Run the code (may take some time) and inspect the output (in the second output box). Interpret the signs (directions) of the coefficients: What increases the probability that a pupil is selected as statement target, what decreases it?</p></li>
+<li><p>Estimate some more models, adding/removing effects and changing arguments.</p></li>
+</ol>
+</div>
+<div id="section-interpreting-results-1" class="section level3">
+<h3>Interpreting results</h3>
+<p>As with the results of the rate model, we can base our confidence of the sign (direction) of effects on the statistical significance of results (stars to the `` column in the results output).</p>
+<p>Generally speaking, a positive effect increases the chance that a pupil is selected as statement target, whereas a negative effect decreases it. The particulars are for enthusiasts only (next subtopic).</p>
+</div>
+<div id="section-effect-size-details-only-for-enthusiasts-1" class="section level3">
+<h3>Effect size details (only for enthusiasts)</h3>
+<p>The model (for the curious: a multinomial regression model) predicts the log odds of the probability that a pupil is selected as statement target, just like a logistic regression model.</p>
+<p>We can get the predicted odds (relative probability of being selected as statement target, that is, predicted probability of being selected over not being selected) by exponentiating the regression coefficients.</p>
+<p>The resulting value tells how much more likely pupils are the statement target if they score one unit higher on the predictor variable (with all other predictors at zero).</p>
+<div class="tutorial-exercise" data-label="interpretrate2" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># For the original choice model: 
+exp(coef(model_statement_choice))</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
+</div>
+<p>For example, pupils who are one unit more similar to the speaker (sender) are around 164 more likely to be selected as target (if they are not playmate of the speaker and did not make statements to the speaker in the preceding 3 minutes).</p>
+<p>This looks like an incredibly large effect. Unfortunately, we do not know the scale of the similarity variable. Perhaps one unit is a huge similarity score.</p>
+<div class="question">
+<p>Exercise</p>
+<ol style="list-style-type: decimal">
+<li>Run the code and interpret the results for the other effects.</li>
+</ol>
+</div>
+</div>
+</div>
+<div id="section-relational-events-model" class="section level2">
+<h2>Relational Events Model</h2>
+<p>Relational Events Modes (REMs) offer an alternative (and precursor) to the separate estimation of rate and choice models. In a REM, both models are estimated at the same time.</p>
+<p>A REM evaluates all possible arrows that may appear at a time point. It predicts which of these is most likely to appear given the state of the network: previous arrows (for example, statements), other relations (for example, friendship, playmates), speaker and target characteristics, and (dis)similarities between these.</p>
+<p>As a consequence, we can use all types of effects from the <code>goldfish</code> package. For effects that may address the sender and receiver, we must use the <code>type = "ego"</code> or <code>type = "alter"</code> argument to clarify which one we mean:</p>
+<ul>
+<li>popularity (indegree): <code>indeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE, type = c("alter", "ego"))</code>;</li>
+<li>activity (outdegree): <code>outdeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE, type = c("alter", "ego"))</code>;</li>
+<li>embeddedness: <code>node_trans(network, isTwoMode = FALSE, window = Inf, ignoreRep = FALSE, type = c("alter", "ego"))</code>.</li>
+</ul>
+<p>We can estimate REMs with the <code>goldfish</code> package (as well as with the <code>relevent</code> package).</p>
+<div class="tutorial-exercise" data-label="rem" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># Estimate the receiver of the statements that pupils make.
+# NOTE: ESTIMATION MAY TAKE QUITE SOME TIME.
+# Step 1: Define the dependent events. Same as the rate model (see there).
+# Step 2: Estimate the choice model.
+model_statement_REM &lt;- estimate(
+  events_dependent ~ 1 + #an intercept is not automatically added!
+    ego(nodes_pupils$sex) + 
+    ego(nodes_pupils$adhd) + 
+    indeg(net_statements, isTwoMode = FALSE, weighted = TRUE, window = 3, type = &quot;ego&quot;) +
+    sim(nodes_pupils$adhd) + 
+    tie(net_playmates, weighted = FALSE, window = 1, ignoreRep = TRUE) +
+    recip(net_statements, weighted = TRUE, window = 3, ignoreRep = FALSE),
+    model = &quot;REM&quot;, subModel = &quot;choice&quot; #select the REM model and choice submodel
+  )
+summary(model_statement_REM)</code></pre>
+<script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.timelimit":300,"exercise.checker":"NULL"}</script>
+</div>
+<div class="question">
+<p>Exercises</p>
+<ol style="list-style-type: decimal">
+<li>A DyNAM model uses reciprocity only to model the statement target, not the speaker. In contrast, a REM uses reciprocity both to select the speaker and target. Which model is intuitively more plausible to you?</li>
+<li>Run the code (if your computer is not too slow) and interpret the sign of the coefficients as increasing or decreasing the probability of a statement.</li>
+</ol>
+</div>
+</div>
+<div id="section-playmate-coordination" class="section level2">
+<h2>Playmate coordination</h2>
+<p>The rate and choice models can only predict directed ties and interactions, where we can distinguish between sender and receiver.</p>
+<p>In contrast, our playmate ties are undirected. We simply do not know who initiated the playmate tie (“Do you want to play with me?”) and who accepted the invitation (“Yes, let’s play together!”).</p>
+<p>The <code>goldfish</code> package offers a choice-coordination sub-model to analyze the change of undirected ties and interactions over time. It assumes that both actors involved decide whether or not to participate in the tie or interaction.</p>
+<p>This model can handle all types of effects that are available in the package. It predicts which tie/interaction is started or ended (given that a tie/interaction has started or ended).</p>
+<p>The effects are interpreted in the same way as in a DyNAM choice model.</p>
+<div class="tutorial-exercise" data-label="coordinationmodel1" data-caption="Code" data-completion="1" data-diagnostics="1" data-startover="1" data-lines="0">
+<pre class="text"><code># Estimate the probability (log odds) that two pupils start to play together.
+# Step 1: Define the dependent events
+events_play_dep &lt;- defineDependentEvents(
+  events = events_playmates[events_playmates$increment == 1,], #the event list that should be considered as a dependent variable in the model
+  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
+  defaultNetwork = net_playmates #name of a goldfish network object
+)
+# NOTE: Within the tutorial, changes to the code of Step 1 are ignored.
+# Step 2: Estimate the coordination model.
+model_playmate_start &lt;- estimate(
+  events_play_dep ~ #do not use an intercept in a choice (coordination) model!
+      same(nodes_pupils$sex) + 
+      same(nodes_pupils$ethnicity) + 
+      sim(nodes_pupils$adhd) + 
+      tie(net_friends) + #friendship is static: don&#39;t use the &#39;window&#39; argument
+      indeg(net_playmates, isTwoMode = FALSE, weighted = TRUE, window = 3, type = &quot;alter&quot;) + 
+      trans(net_playmates, window = 3, ignoreRep = TRUE), 
+    model = &quot;DyNAM&quot;, subModel = &quot;choice_coordination&quot; #note the submodel
+  )
+summary(model_playmate_start)</code></pre>
 <script type="application/json" data-opts-chunk="1">{"fig.width":6.5,"fig.height":4,"fig.retina":2,"fig.align":"default","fig.keep":"high","fig.show":"asis","out.width":624,"warning":false,"error":false,"message":false,"exercise.df_print":"paged","exercise.checker":"NULL"}</script>
 </div>
 <div class="question">
 <p>Exercises</p>
 <ol style="list-style-type: decimal">
-<li></li>
+<li><p>Inspect the code of Step 2. Which effects are estimated and what do the arguments mean?</p></li>
+<li><p>Run the code (may take some time) and inspect the output (in the second output box). Interpret the signs (directions) of the coefficients: What increases the probability that two pupils tart playing together, what decreases the probability?</p></li>
+<li><p>Estimate some more models, adding/removing effects and changing arguments.</p></li>
 </ol>
-</div>
-<p>{plus results interpretation; no predict() of confint() functions available}</p>
-<p>Poisson model; (inverse) waiting time (rate function: speed): positive effects speed up, increase the probability of acting</p>
-<div id="section-estimate-the-receiver-choice-model" class="section level3">
-<h3>Estimate the (receiver) choice model</h3>
-<div class="question">
-<p>Exercises</p>
-<ol style="list-style-type: decimal">
-<li></li>
-</ol>
-</div>
-<p>{plus results interpretation}</p>
-</div>
-<div id="section-relational-events-model" class="section level3">
-<h3>Relational Events Model</h3>
-<p>In Relational Events Models (REMs), the rate and choice models are estimated at the same time.</p>
-<div class="question">
-<p>Exercises</p>
-<ol style="list-style-type: decimal">
-<li></li>
-</ol>
-</div>
-</div>
-<div id="section-playmate-coordination" class="section level3">
-<h3>Playmate coordination</h3>
-<div class="question">
-<p>Exercises</p>
-<ol style="list-style-type: decimal">
-<li></li>
-</ol>
-</div>
 </div>
 </div>
 <div id="section-rsiena-for-panel-wave-data" class="section level2">
 <h2><code>RSiena</code> for panel wave data</h2>
+<p>The models presented in the preceding topics all require data on events with more or less precise information on start and end times.</p>
+<p>If the data is collected in panel waves, similar types of models can be estimated with the <code>RSiena</code> package.</p>
+<p><code>RSiena</code> uses the same logic and types of predictors as the DyNAM rate and choice models. It treats the events of tie or interaction starts and endings in between panel waves as missing data. The missing data are guessed by simulating the process of events in between panel waves.</p>
+<p>Because of the guessing, <code>RSiena</code> requires that the ties do not change too much between subsequent panel waves. A substantial proportion of ties that exist in the a panel wave must still exist in the next.</p>
+<p>If the ties for which we want to predict change are durable in comparison to the time span between measurement waves, you can analyze the typs of effects learned here with the <code>RSiena</code> package.</p>
 </div>
 <div id="section-conclusion" class="section level2">
 <h2>Conclusion</h2>
+<p>We have learned:</p>
+<ul>
+<li>What types of effects are used to predict network evolution;</li>
+<li>Which research questions can be answered by tests of these effects;</li>
+<li>How to estimate the effects with different models;</li>
+<li>How to globally interpret the results.</li>
+</ul>
+<p>This concludes the tutorials on analyzing events within networks.</p>
 </div>
 <div id="section-further-reading" class="section level2">
 <h2>Further Reading</h2>
+<ul>
+<li>An explanation and example application of the rate and choice models can be found in: Stadtfeld, C., &amp; Block, P. (2017). Interactions, Actors, and Time: Dynamic Network Actor Models for Relational Events. <em>Sociological Science</em>, 4, 318–352. <a href="https://doi.org/10.15195/v4.a14" class="uri">https://doi.org/10.15195/v4.a14</a>.</li>
+<li>Coordination models are introduced and applied in: Stadtfeld, C., Hollway, J., &amp; Block, P. (2017). Dynamic Network Actor Models: Investigating Coordination Ties through Time. <em>Sociological Methodology</em>, 47(1), 1–40. <a href="https://doi.org/10.1177/0081175017709295" class="uri">https://doi.org/10.1177/0081175017709295</a>.</li>
+<li>The seminal paper on relational events models: Butts, C. T. (2008). A relational event framework for social action. <em>Sociological Methodology</em>, 38(1), 155–200.</li>
+<li>An extensive manual for the <code>RSiena</code> package can be found at <a href="http://www.stats.ox.ac.uk/~snijders/siena/RSiena_Manual.pdf" class="uri">http://www.stats.ox.ac.uk/~snijders/siena/RSiena_Manual.pdf</a>.</li>
+<li>An alternative approach based on event history models is offered in: de Nooy, W. (2011). Networks of action and events over time. A multilevel discrete-time event history model for longitudinal network data. <em>Social Networks</em>, 33(1), 31–40. <a href="https://doi.org/10.1016/j.socnet.2010.09.003" class="uri">https://doi.org/10.1016/j.socnet.2010.09.003</a>.</li>
+</ul>
 </div>
 <div id="section-appendix-data-preparation" class="section level2">
 <h2>Appendix: Data preparation</h2>
@@ -614,154 +792,36 @@ pairs_const <- NikitaRocks::pairs_const
 pairs_dyn <- NikitaRocks::pairs_dyn
 
 #load prepared analysis data sets
-utterances <- NikitaRocks::utterances
+events_playmates <- NikitaRocks::events_playmates
+events_statements <- NikitaRocks::events_statements
+net_friends <- NikitaRocks::net_friends
+net_playmates <- NikitaRocks::net_playmates
+net_statements <- NikitaRocks::net_statements
+nodes_pupils <- NikitaRocks::nodes_pupils
+#load prepared analysis results
+model_playmate_start <- NikitaRocks::model_playmate_start
+model_statement_choice <- NikitaRocks::model_statement_choice
+model_statement_rate <- NikitaRocks::model_statement_rate
+model_statement_REM <- NikitaRocks::model_statement_REM
 
-# Create the data sets for predicting statements and playmate ties with the
-# goldfish package.
+# Define the dependent events for predicting statement start.
+# The goldfish::estimate() function doesn't find the events created in the
+# learnr tutorial.
+events_dependent <- defineDependentEvents(
+  events = events_statements[events_statements$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
+  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
+  defaultNetwork = net_statements #name of a goldfish network object
+)
 
-# Step 1: The node set and time-constant node characteristics or starting values for time-varying node characteristics.
-# - Nodes are identified by textual labels (required). 
-# - variable 'present' (required) indicates if a pupil was already present at
-#   the first time point.
-# - Add time-constant node characteristics or starting values for time-varying
-#   node characteristics (if any). These can be used as attributes in the
-#   construction of predictors.
-# The basic data set pupils_const contains all information.
-nodes_pupils <- pupils_const %>% 
-  #sort by label to ensure the same order in all networks
-  arrange(label) %>%
-  #select relevant variables.
-  select(label, present, sex, ethnicity, adhd)
-# Turn the data frame into a nodes.goldfish data object.
-nodes_pupils <- defineNodes(nodes = nodes_pupils)
-print("Showing data set nodes_pupils:")
-as_tibble(nodes_pupils)
+# Define the dependent events for predicting starting to play together.
+# The goldfish::estimate() function doesn't find the events created in the
+# learnr tutorial.
+events_play_dep <- defineDependentEvents(
+  events = events_playmates[events_playmates$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
+  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
+  defaultNetwork = net_playmates #name of a goldfish network object
+)
 
-# Step 2: The changes to node attributes (if any, optional) over time.
-# We do not have time-varying node attributes.
-# If we had, we should ave used the linkEvents() function with arguments
-# changeEvents and attribute.
-
-# Step 3. The static or starting networks. 
-# One network for each type of tie or event. One of these is the
-# dependent/outcome network, all can be used as independent/predictor networks.
-# All networks must have the same nodes as the nodes set and ordered as in the
-# nodes set created in Step 1.
-# - The initially empty directed network of statements.
-net_statements <- defineNetwork(nodes = nodes_pupils, directed = TRUE)
-# - The initially empty undirected network of playmates.
-net_playmates <- defineNetwork(nodes = nodes_pupils, directed = FALSE)
-# - The static undirected network of friendships.
-#   For a static network, create a 0/1 matrix with rows and columns in the same
-#   order as in the list of nodes.
-#   The matrix columns must have the node labels as dimnames, but the rows do
-#   not need to have dimnames.
-friends_matrix <- pairs_const %>%
-  #keep only the sender and receiver
-  select(from, to, friend) %>%
-  #add labels to IDs (so goldfish can match the matrix to the nodes)
-  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
-  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
-  #label.x is sender, label.y is receiver: sort to match the nodes
-  arrange(label.x, label.y) %>%
-  #put 'to' values in columns
-  pivot_wider(
-    id_cols = label.x,
-    names_from = label.y, #receiver provides the new columns (variables)
-    values_from = friend, #variable friend indicates 0/1 friendship
-    values_fill = 0, #replace missing values (e.g., on the diagonal) by 0
-    names_sort = TRUE #ensure that the columns are in the correct order
-    ) %>%
-  #drop the from variable (row 1 has ID 1, etc.)
-  select(-label.x) %>%
-  #turn into a matrix
-  as.matrix()
-# create the undirected network of friendships
-net_friends <- defineNetwork(matrix = friends_matrix, nodes = nodes_pupils, directed = FALSE)
-print("Showing data set net_friends:")
-as_tibble(net_friends)
-# Cleanup.
-rm(friends_matrix)
-
-# Step 4. The events that happen to the networks. 
-# Create a list of events for each network, indicating when an event starts or
-# stops. Note: event start and end must become different rows (observations).
-# One of these lists contains the events that we want to predict.
-# Each events list must contain the variables: 
-# - time: POSIXct, integer, or numeric (with decimals), 
-# - sender: character label that occurs in nodes_pupils,
-# - receiver: character label that occurs in nodes_pupils, 
-# - increment: create (1) or dissolve (-1) event (numeric). Instead of
-#   increment: replace, which updates the value of an attribute or tie (pair)?
-
-# A. statement events
-events_statements <- pairs_dyn %>%
-  #select utterances in Break 1
-  filter(dyntie == "Utterance" & breakID == 1) %>%
-  #add labels to IDs (so goldfish can match the matrix to the nodes)
-  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
-  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
-  #rename onset and terminus
-  rename(
-    onset.time = onset,
-    terminus.time = terminus
-  ) %>%
-  #stack onset and terminus
-  pivot_longer(
-    cols = onset.time:terminus.censored,
-    names_to = c("type", ".value"),
-    names_sep = "\\.",
-    values_drop_na = TRUE
-  ) %>%
-  #filter out censored end times (in case we want to predict end times)
-  filter(!censored | type == "onset") %>%
-  #recode increment into 1 for onset and -1 for terminus
-  mutate(increment = ifelse(type == "onset", 1, -1)) %>%
-  #select and rename relevant variables
-  select(time, sender = label.x, receiver = label.y, increment) %>%
-  #order by time
-  arrange(time) %>%
-  #a tibble throws a warning (in tutorial): Unknown or uninitialised column: `replace`.
-  as.data.frame()
-# link events to the network
-net_statements <- linkEvents(x = net_statements, changeEvents = events_statements, nodes = nodes_pupils)
-print("Showing data set events_statements:")
-as_tibble(events_statements)
-
-# B. playmate events
-events_playmates <- pairs_dyn %>%
-  #select playmate cases in Break 1 and only one row for each pair (undirected data)
-  filter(dyntie == "Playmate" & breakID == 1 & from < to) %>%
-  #add labels to IDs (so goldfish can match the matrix to the nodes)
-  left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
-  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
-  #rename onset and terminus
-  rename(
-    onset.time = onset,
-    terminus.time = terminus
-  ) %>%
-  #stack onset and terminus
-  pivot_longer(
-    cols = onset.time:terminus.censored,
-    names_to = c("type", ".value"),
-    names_sep = "\\.",
-    values_drop_na = TRUE
-  ) %>%
-  #filter out censored end times (there aren't any)
-  filter(!censored | type == "onset") %>%
-  #recode increment into 1 for onset and -1 for terminus
-  mutate(increment = ifelse(
-    type == "onset", 1, -1
-  )) %>%
-  #select and rename relevant variables
-  select(time, sender = label.x, receiver = label.y, increment) %>%
-  #order by time
-  arrange(time) %>% #a tibble throws a warning (in tutorial): Unknown or uninitialised column: `replace`.
-  as.data.frame()
-# link events to the network
-net_playmates <- linkEvents(x = net_playmates, changeEvents = events_playmates, nodes = nodes_pupils)
-print("Showing data set events_playmates:")
-as_tibble(events_playmates)
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
@@ -775,9 +835,9 @@ session$onSessionEnded(function() {
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
-`tutorial-exercise-installGoldfish-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-installGoldfish-code-editor`)), session)
-output$`tutorial-exercise-installGoldfish-output` <- renderUI({
-  `tutorial-exercise-installGoldfish-result`()
+`tutorial-exercise-loadGoldfish-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-loadGoldfish-code-editor`)), session)
+output$`tutorial-exercise-loadGoldfish-output` <- renderUI({
+  `tutorial-exercise-loadGoldfish-result`()
 })
 </script>
  
@@ -796,6 +856,41 @@ output$`tutorial-exercise-ratemodel1-output` <- renderUI({
 </script>
  
 <script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-interpretrate1-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-interpretrate1-code-editor`)), session)
+output$`tutorial-exercise-interpretrate1-output` <- renderUI({
+  `tutorial-exercise-interpretrate1-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-choicemodel1-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-choicemodel1-code-editor`)), session)
+output$`tutorial-exercise-choicemodel1-output` <- renderUI({
+  `tutorial-exercise-choicemodel1-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-interpretrate2-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-interpretrate2-code-editor`)), session)
+output$`tutorial-exercise-interpretrate2-output` <- renderUI({
+  `tutorial-exercise-interpretrate2-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-rem-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-rem-code-editor`)), session)
+output$`tutorial-exercise-rem-output` <- renderUI({
+  `tutorial-exercise-rem-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
+`tutorial-exercise-coordinationmodel1-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-coordinationmodel1-code-editor`)), session)
+output$`tutorial-exercise-coordinationmodel1-output` <- renderUI({
+  `tutorial-exercise-coordinationmodel1-result`()
+})
+</script>
+ 
+<script type="application/shiny-prerendered" data-context="server">
 `tutorial-exercise-dataprep-result` <- learnr:::setup_exercise_handler(reactive(req(input$`tutorial-exercise-dataprep-code-editor`)), session)
 output$`tutorial-exercise-dataprep-output` <- renderUI({
   `tutorial-exercise-dataprep-result`()
@@ -803,7 +898,7 @@ output$`tutorial-exercise-dataprep-output` <- renderUI({
 </script>
  <!--html_preserve-->
 <script type="application/shiny-prerendered" data-context="dependencies">
-{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["header-attrs"]},{"type":"character","attributes":{},"value":["2.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pandoc"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["header-attrs.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap"]},{"type":"character","attributes":{},"value":["3.3.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/bootstrap"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["viewport"]}},"value":[{"type":"character","attributes":{},"value":["width=device-width, initial-scale=1"]}]},{"type":"character","attributes":{},"value":["js/bootstrap.min.js","shim/html5shiv.min.js","shim/respond.min.js"]},{"type":"character","attributes":{},"value":["css/cerulean.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["pagedtable"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pagedtable-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/pagedtable.js"]},{"type":"character","attributes":{},"value":["css/pagedtable.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["textmate.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-format"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmarkdown/templates/tutorial/resources"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-format.js"]},{"type":"character","attributes":{},"value":["tutorial-format.css","rstudio-theme.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["navigation"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/navigation-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tabsets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["default.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["anchor-sections"]},{"type":"character","attributes":{},"value":["1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/anchor-sections"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["anchor-sections.js"]},{"type":"character","attributes":{},"value":["anchor-sections.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["font-awesome"]},{"type":"character","attributes":{},"value":["5.1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/fontawesome"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/all.css","css/v4-shims.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootbox"]},{"type":"character","attributes":{},"value":["4.4.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/bootbox"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["bootbox.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["idb-keyvalue"]},{"type":"character","attributes":{},"value":["3.2.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/idb-keyval"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["idb-keyval-iife-compat.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]}]}
+{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["header-attrs"]},{"type":"character","attributes":{},"value":["2.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pandoc"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["header-attrs.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootstrap"]},{"type":"character","attributes":{},"value":["3.3.5"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/bootstrap"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["viewport"]}},"value":[{"type":"character","attributes":{},"value":["width=device-width, initial-scale=1"]}]},{"type":"character","attributes":{},"value":["js/bootstrap.min.js","shim/html5shiv.min.js","shim/respond.min.js"]},{"type":"character","attributes":{},"value":["css/cerulean.min.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["pagedtable"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/pagedtable-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["js/pagedtable.js"]},{"type":"character","attributes":{},"value":["css/pagedtable.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["textmate.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-format"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmarkdown/templates/tutorial/resources"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-format.js"]},{"type":"character","attributes":{},"value":["tutorial-format.css","rstudio-theme.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["navigation"]},{"type":"character","attributes":{},"value":["1.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/navigation-1.1"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tabsets.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["highlightjs"]},{"type":"character","attributes":{},"value":["9.12.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/highlightjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["highlight.js"]},{"type":"character","attributes":{},"value":["default.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["anchor-sections"]},{"type":"character","attributes":{},"value":["1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/anchor-sections"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["anchor-sections.js"]},{"type":"character","attributes":{},"value":["anchor-sections.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["jquery"]},{"type":"character","attributes":{},"value":["1.11.3"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/jquery"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["jquery.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["font-awesome"]},{"type":"character","attributes":{},"value":["5.1.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["rmd/h/fontawesome"]}]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["css/all.css","css/v4-shims.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["rmarkdown"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["2.5"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["bootbox"]},{"type":"character","attributes":{},"value":["4.4.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/bootbox"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["bootbox.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["idb-keyvalue"]},{"type":"character","attributes":{},"value":["3.2.0"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/idb-keyval"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["idb-keyval-iife-compat.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[false]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial.js"]},{"type":"character","attributes":{},"value":["tutorial.css"]},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-autocompletion"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-autocompletion.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["tutorial-diagnostics"]},{"type":"character","attributes":{},"value":["0.10.1"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/tutorial"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["tutorial-diagnostics.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["ace"]},{"type":"character","attributes":{},"value":["1.2.6"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/ace"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["ace.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","version","src","meta","script","stylesheet","head","attachment","package","all_files","pkgVersion"]},"class":{"type":"character","attributes":{},"value":["html_dependency"]}},"value":[{"type":"character","attributes":{},"value":["clipboardjs"]},{"type":"character","attributes":{},"value":["1.5.15"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["file"]}},"value":[{"type":"character","attributes":{},"value":["lib/clipboardjs"]}]},{"type":"NULL"},{"type":"character","attributes":{},"value":["clipboard.min.js"]},{"type":"NULL"},{"type":"NULL"},{"type":"NULL"},{"type":"character","attributes":{},"value":["learnr"]},{"type":"logical","attributes":{},"value":[true]},{"type":"character","attributes":{},"value":["0.10.1"]}]}]}
 </script>
 <!--/html_preserve-->
 <!--html_preserve-->
