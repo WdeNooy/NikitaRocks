@@ -62,7 +62,6 @@ events_play_dep <- defineDependentEvents(
   nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
   defaultNetwork = net_playmates #name of a goldfish network object
 )
-
 ```
 
 <!-- Define programming tip style -->

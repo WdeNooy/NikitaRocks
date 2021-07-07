@@ -34,7 +34,7 @@ utterances
 }
 \description{
 For each statement made by a pupil in Break 1 directed at another pupil, the
-following variables were created from the four basic data frames
-(pupils_const, pupils_dyn, Pairs_const, Pairs_dyn):
+dependent and independent variables were created from the four basic data frames
+(pupils_const, pupils_dyn, Pairs_const, Pairs_dyn).
 }
 \keyword{datasets}

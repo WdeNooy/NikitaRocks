@@ -8,8 +8,8 @@
 A data frame (tibble) with eight variables:
 \describe{
   \item{ID}{integer pupil ID, key to other data frames}
-  \item{label}{pupil's first name, as a caracter string}
-  \item{present}{presence of the pupil at the start of data collection, as boolean; required for visualizations with the ndtv package}
+  \item{label}{pupil's first name, as a character string}
+  \item{present}{presence of the pupil at the start of data collection, as boolean; required for analysis with the goldfish package}
   \item{onset}{time point at which the pupil appears within the data set, as integer; required for visualizations with the ndtv package}
   \item{terminus}{time point at which the pupil appears within the data set for the last time, as integer; required for visualizations with the ndtv package}
   \item{sex}{pupil's sex, boy (0) or girl(1)}
