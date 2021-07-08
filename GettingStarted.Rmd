@@ -15,17 +15,17 @@ Dear summer course participant,
 
 If you want to have hands-on experience during the sessions on modelling events in social networks, please install the following software (in the order specified here) on your computer before the start of these sessions.
 
-### Step 1. Install the latest version of R. 
+### Step 1. Install the latest version of R
 
 Go to https://www.r-project.org/, click the link __download R__, select a nearby download site (_mirror_), click the link to download R for your operating system (Linux, macOS, Windows), and download the application for your operating system version. After downloading the app, install it.
 
-### Step 2. Install the latest version of RStudio. 
+### Step 2. Install the latest version of RStudio
 
 Go to http://www.rstudio.com/download, choose to download the free version, press the download button in the new window that opens, and install the downloaded app. Open the RStudio app after installation to check that it works. Note that RStudio automatically starts R (see the message at the top of the __Console__ panel in RStudio).
 
 ![](RStudio.png)
 
-### Step 3. Install the R `remotes` package.
+### Step 3. Install the R `remotes` package
 
 We need this package to install the `NikitaRocks` package.
 
@@ -33,7 +33,7 @@ Type (or copy & paste) the following command after the prompt (`>`) in the RStud
 
 > install.packages("remotes")
 
-### Step 4. Install the `NikitaRocks` package.
+### Step 4. Install the `NikitaRocks` package
 
 This package contains the course materials and it installs all R packages that we need.
 
@@ -51,4 +51,20 @@ After some time, the __Tutorial__ tab in RStudio (top-left) should show the six 
 
 ![](TutorialsTab.png)
 
-That's it!
+### Step 5. Install the `goldfish` package
+
+We use the `goldfish` package to estimate models for predicting tie creation or dissolution in Session 6.
+
+Type (or copy & paste) the following command after the prompt (`>`) in the RStudio __Console__ panel and execute it by pressing your Return/Enter key:
+
+> remotes::install_github('snlab-ch/goldfish')
+
+If you get the question whether you want to update packages, type __1__ and press Return/Enter.
+
+Again, do __not__ install packages that need compilation.
+
+Installation will take some time. If it succeeds, it shows the __* DONE (goldfish)__ text (and perhaps some warnings).
+
+On a Mac computer, installation may fail and end with a message that _no suitable compiler(s) were found_ and that you have to install XCode. 
+
+### That's it!

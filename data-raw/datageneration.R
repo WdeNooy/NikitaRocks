@@ -2407,14 +2407,78 @@ events_playmates <- pairs_dyn %>%
 # link events to the network
 net_playmates <- linkEvents(x = net_playmates, changeEvents = events_playmates, nodes = nodes_pupils)
 
+# Pre-estimate models, so they can be stored in the package.
+# Define the dependent events for predicting statement start.
+# The goldfish::estimate() function doesn't find the events created in the
+# learnr tutorial.
+events_dependent <- defineDependentEvents(
+  events = events_statements[events_statements$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
+  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
+  defaultNetwork = net_statements #name of a goldfish network object
+)
+# Estimate the rate model for statements.
+model_statement_rate <- estimate(
+  events_dependent ~ 1 + #an intercept is not automatically added!
+    ego(nodes_pupils$sex) +
+    ego(nodes_pupils$adhd) +
+    indeg(net_statements, isTwoMode = FALSE, weighted = TRUE, window = 3) +
+    indeg(net_friends, isTwoMode = FALSE),
+  model = "DyNAM", subModel = "rate" #select the rate submodel
+)
+# Estimate the choice model for statements.
+model_statement_choice <- estimate(
+  events_dependent ~ #do not use an intercept in a choice model!
+    sim(nodes_pupils$adhd) +
+    tie(net_playmates, weighted = FALSE, window = 1, ignoreRep = TRUE) +
+    recip(net_statements, weighted = TRUE, window = 3, ignoreRep = FALSE),
+  model = "DyNAM", subModel = "choice" #select the choice submodel
+)
+# Estimate the REM for statements.
+model_statement_REM <- estimate(
+  events_dependent ~ 1 + #an intercept is not automatically added!
+    ego(nodes_pupils$sex) +
+    ego(nodes_pupils$adhd) +
+    indeg(net_statements, isTwoMode = FALSE, weighted = TRUE, window = 3, type = "ego") +
+    sim(nodes_pupils$adhd) +
+    tie(net_playmates, weighted = FALSE, window = 1, ignoreRep = TRUE) +
+    recip(net_statements, weighted = TRUE, window = 3, ignoreRep = FALSE),
+  model = "REM", subModel = "choice" #select the REM model and choice submodel
+)
+# Define the dependent events for predicting starting to play together.
+# The goldfish::estimate() function doesn't find the events created in the
+# learnr tutorial.
+events_play_dep <- defineDependentEvents(
+  events = events_playmates[events_playmates$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
+  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
+  defaultNetwork = net_playmates #name of a goldfish network object
+)
+# Estimate the coordination model (playmate ties).
+model_playmate_start <- estimate(
+  events_play_dep ~ #do not use an intercept in a choice (coordination) model!
+    same(nodes_pupils$sex) +
+    same(nodes_pupils$ethnicity) +
+    sim(nodes_pupils$adhd) +
+    tie(net_friends) + #friendship is static: don't use the 'window' argument
+    indeg(net_playmates, isTwoMode = FALSE, weighted = TRUE, window = 3, type = "alter") +
+    trans(net_playmates, window = 3, ignoreRep = TRUE),
+  model = "DyNAM", subModel = "choice_coordination" #note the submodel
+)
+
 #save all data objects to package data directory
+# so they are available if estimation takes too much time
+# and Tutorial 6 can be opened even if goldfish was not installed (Mac problems)
 save(nodes_pupils, file = "data/nodes_pupils.RData")
 save(net_statements, file = "data/net_statements.RData")
 save(net_playmates, file = "data/net_playmates.RData")
 save(net_friends, file = "data/net_friends.RData")
 save(events_statements, file = "data/events_statements.RData")
 save(events_playmates, file = "data/events_playmates.RData")
-
+save(events_dependent, file = "data/events_dependent.RData")
+save(events_play_dep, file = "data/events_play_dep.RData")
+save(model_statement_rate, file = "data/model_statement_rate.RData")
+save(model_statement_choice, file = "data/model_statement_choice.RData")
+save(model_statement_REM, file = "data/model_statement_REM.RData")
+save(model_playmate_start, file = "data/model_playmate_start.RData")
 
 # PROBLEM: `ndtv::` (and `networkDynamic::`) ####
 # seems not to be able to handle

@@ -14,7 +14,7 @@ library(learnr)
 library(tidyverse)
 library(knitr)
 library(RColorBrewer) #for colour palettes
-library(goldfish) #for relational events models
+# library(goldfish) #for relational events models (installed and loaded during the session)
 library(igraph) #for network visualization
 library(ggraph) #for network visualization
 
@@ -39,29 +39,13 @@ net_friends <- NikitaRocks::net_friends
 net_playmates <- NikitaRocks::net_playmates
 net_statements <- NikitaRocks::net_statements
 nodes_pupils <- NikitaRocks::nodes_pupils
+events_dependent <- NikitaRocks::events_dependent
+events_play_dep <- NikitaRocks::events_play_dep
 #load prepared analysis results
 model_playmate_start <- NikitaRocks::model_playmate_start
 model_statement_choice <- NikitaRocks::model_statement_choice
 model_statement_rate <- NikitaRocks::model_statement_rate
 model_statement_REM <- NikitaRocks::model_statement_REM
-
-# Define the dependent events for predicting statement start.
-# The goldfish::estimate() function doesn't find the events created in the
-# learnr tutorial.
-events_dependent <- defineDependentEvents(
-  events = events_statements[events_statements$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
-  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
-  defaultNetwork = net_statements #name of a goldfish network object
-)
-
-# Define the dependent events for predicting starting to play together.
-# The goldfish::estimate() function doesn't find the events created in the
-# learnr tutorial.
-events_play_dep <- defineDependentEvents(
-  events = events_playmates[events_playmates$increment == 1,], #the event list that should be considered as a dependent variable in models: we only analyze statement starts
-  nodes = nodes_pupils, #data frame or a nodes.goldfish object containing the nodes used in the event list
-  defaultNetwork = net_playmates #name of a goldfish network object
-)
 ```
 
 <!-- Define programming tip style -->
@@ -311,9 +295,10 @@ Note that there is a third step, namely predicting the characteristics of an act
 We use the `goldfish` package to estimate models for predicting interactions or tie creation/dissolution.
 
 ```{r installGoldfish, eval=FALSE, echo=TRUE}
-# COPY THIS COMMANDS TO THE RStudio CONSOLE AND RUN IT THERE. This will install the goldfish package from github.
+# COPY THIS COMMANDS TO THE RStudio CONSOLE AND RUN IT THERE. This will install
+# the goldfish package from github.
 remotes::install_github("snlab-ch/goldfish")
-# Note: this requires the remotes package, which should be installed
+# Note: this requires the remotes package, which has been  installed
 # automatically when you install the NikitaRocks package.
 ```
 
@@ -570,7 +555,7 @@ The resulting value tells how much more likely pupils are the statement target i
 exp(coef(model_statement_choice))
 ```
 
-For example, pupils who are one unit more similar to the speaker (sender) are around `r round(exp(coef(model_statement_choice)[[1]]))` more likely to be selected as target (if they are not playmate of the speaker and did not make statements to the speaker in the preceding 3 minutes).
+For example, pupils who are one unit more similar to the speaker (sender) are around `r round(exp(model_statement_choice$parameters[[1]]))` more likely to be selected as target (if they are not playmate of the speaker and did not make statements to the speaker in the preceding 3 minutes).
 
 This looks like an incredibly large effect. Unfortunately, we do not know the scale of the similarity variable. Perhaps one unit represents an unrealistically huge change in the similarity score.
 
