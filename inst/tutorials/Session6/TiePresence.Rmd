@@ -6,7 +6,7 @@ output:
     allow_skip: true
 runtime: shiny_prerendered
 description: >
-  Regression basics, exposure, and our first analyses of pupil loudness.
+  Estimating the timing and targets of statements and playmates with the `goldfish` package.
 ---
 
 ```{r setup, include=FALSE}
@@ -491,7 +491,7 @@ exp(coef(model_statement_rate))
 
 If we take the inverse of the exponentiated effects, we get the predicted percentage change in the waiting time between statements (for a 1 unit increase in the predictor).
 
-```{r interpretrate1, exercise = TRUE}
+```{r interpretrate2, exercise = TRUE}
 # For the original rate model:
 print("Predicted percentage change in the waiting time:")
 1 / exp(coef(model_statement_rate))
@@ -565,7 +565,7 @@ We can get the predicted odds (relative probability of being selected as stateme
 
 The resulting value tells how much more likely pupils are the statement target if they score one unit higher on the predictor variable (with all other predictors at zero).
 
-```{r interpretrate2, exercise = TRUE}
+```{r interpretchoice1, exercise = TRUE}
 # For the original choice model: 
 exp(coef(model_statement_choice))
 ```

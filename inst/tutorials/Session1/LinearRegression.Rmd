@@ -726,7 +726,7 @@ We want to predict it from the loudness of preceding voices, so we must select t
 
 The code below does the trick. As you can see, it is not simple.
 
-```{r calculate1, eval=FALSE, echo=TRUE}
+```{r calculate1, exercise=TRUE}
 # data preparation for analyzing loudness at the event level with several
 # exposure variables.
 # first create a helper data frame only containing utterances in Break 1
@@ -890,7 +890,7 @@ As a consequence, I have created the animated visualization the hard way, creati
 
 If you want to know how, inspect the code below.
 
-```{r eval=FALSE, echo=TRUE}
+```{r calculate2, exercise=TRUE}
 # Tutorial preparation: adjusted data sets, visualizations, and analyses
 
 # Load all required packages.

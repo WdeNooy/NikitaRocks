@@ -1,0 +1,54 @@
+---
+title: "Setting Up for Modelling Events in Social Networks"
+author: "Wouter de Nooy"
+date: "7/8/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+Dear summer course participant,
+
+If you want to have hands-on experience during the sessions on modelling events in social networks, please install the following software (in the order specified here) on your computer before the start of these sessions.
+
+### Step 1. Install the latest version of R. 
+
+Go to https://www.r-project.org/, click the link __download R__, select a nearby download site (_mirror_), click the link to download R for your operating system (Linux, macOS, Windows), and download the application for your operating system version. After downloading the app, install it.
+
+### Step 2. Install the latest version of RStudio. 
+
+Go to http://www.rstudio.com/download, choose to download the free version, press the download button in the new window that opens, and install the downloaded app. Open the RStudio app after installation to check that it works. Note that RStudio automatically starts R (see the message at the top of the __Console__ panel in RStudio).
+
+![](RStudio.png)
+
+### Step 3. Install the R `remotes` package.
+
+We need this package to install the `NikitaRocks` package.
+
+Type (or copy & paste) the following command after the prompt (`>`) in the RStudio __Console__ panel and execute it by pressing your Return/Enter key:
+
+> install.packages("remotes")
+
+### Step 4. Install the `NikitaRocks` package.
+
+This package contains the course materials and it installs all R packages that we need.
+
+Type (or copy & paste) the following command after the prompt (`>`) in the RStudio __Console__ panel and execute it by pressing your Return/Enter key:
+
+> remotes::install_github('WdeNooy/NikitaRocks')
+
+This may take some time if many packages are being installed. Wait until you see the message `* DONE (NikitaRocks)`.
+
+Answer __no__ to the question: _Do you want to install from sources the package which needs compilation_. Press the __No__ button if you see a dialog like the one below, or type __no__ and press enter if the question is just written in the RStudio __Console__ tab.
+
+![](compilation.png)
+
+After some time, the __Tutorial__ tab in RStudio (top-left) should show the six tutorials for our sessions. If not, close and reopen RStudio.
+
+![](TutorialsTab.png)
+
+That's it!

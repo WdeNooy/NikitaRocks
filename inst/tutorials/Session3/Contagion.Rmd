@@ -382,7 +382,7 @@ As always, it is not easy to calculating the exposure variables (number of frien
 
 This is an advanced topic that you should probably only study if you start working with your own data.
 
-```{r calculate, eval=FALSE, echo=TRUE}
+```{r calculate, exercise=TRUE}
 #Create the data for analyzing gameapp adoption.
 
 #Create helper table of adoption times: first break in which pupil plays with
