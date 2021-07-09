@@ -70,12 +70,12 @@ On a Mac computer, installation may fail and end with a message that _no suitabl
 * Open the Terminal app (via Launchpad).
 * Install Homebrew with the command in Terminal (wait for the command prompt `$` to reappear): `/bin/bash -c "$(curl -fsSL` https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 * Install 'gcc' with the command in Terminal (wait for the command prompt `$` to reappear): `brew install gcc`
-* Copy the location where gcc was installed, something starting with: `/usr/local/` 
-* In Finder, go to `/Library/Frameworks/R.framework/Resources/etc/`, open the file `Makeconf` and replace the lines:
-    + `CC = clang` by `CC = gcc-8`
-    + `CXX = clang++` by `CXX = g++-8`
-    + `FLIBS =  -L/usr/local/gfortran/lib/gcc/` by `FLIBS = -L/usr/local/lib/gcc/8/gcc/x86_64-apple-darwin17.5.0/8.1.0 -L/usr/local/lib/gcc/8 -lgfortran -lquadmath -lm`
-* Close the `Makeconf` file.
-* Close and re-open RStudio and install the goldfish package again (see above). This time, asnwer __Yes__ to the question if you want to install packages that need compilation.
+* Copy the location where gcc was installed, something starting with `/usr/local/`, for example, `/usr/local/Cellar/gcc/11.1.0_1`
+* Note that in this example, `11` is the version number we need in the next step.
+* In Finder, go to `/Library/Frameworks/R.framework/Resources/etc/`, open the file `Makeconf` and replace the lines (using the gcc version number, here `11`):
+    + `CC = clang` by `CC = gcc-11`
+    + `CXX = clang++` by `CXX = g++11`
+    + `FLIBS =  -L/usr/local/gfortran/lib/gcc/` by `FLIBS = -L/usr/local/Cellar/gcc/11.1.0_1 -L/usr/local/lib/gcc/11 -lgfortran -lquadmath -lm`
+* Close and re-open RStudio and install the goldfish package again (see above).
 
 ### That's it!

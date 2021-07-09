@@ -295,11 +295,15 @@ Note that there is a third step, namely predicting the characteristics of an act
 We use the `goldfish` package to estimate models for predicting interactions or tie creation/dissolution.
 
 ```{r installGoldfish, eval=FALSE, echo=TRUE}
-# COPY THIS COMMANDS TO THE RStudio CONSOLE AND RUN IT THERE. This will install
-# the goldfish package from github.
+# COPY THESE COMMANDS TO THE RStudio CONSOLE AND RUN THEM THERE. 
+
+# If you haven't installed the goldfish package yet, use the below command to
+# install it from github.
 remotes::install_github("snlab-ch/goldfish")
-# Note: this requires the remotes package, which has been  installed
-# automatically when you install the NikitaRocks package.
+
+# In addition, load the NikitaRocks package in the RStudio console with the
+# below command (this makes available data sets that we need).
+library(NikitaRocks)
 ```
 
 <div class="question">
