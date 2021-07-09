@@ -314,7 +314,7 @@ library(goldfish)
 ?goldfishEffects
 ```
 
-2. Run the above code. This should open new browser window with general info on the package.
+2. Run the above code. This should display info on the package (perhaps in a new browser window).
 </div>
 
 For installation problems (particularly on Mac OSX), consult https://github.com/snlab-ch/goldfish (https://github.com/snlab-ch/goldfish#installing-openmp-on-mac-osx).
