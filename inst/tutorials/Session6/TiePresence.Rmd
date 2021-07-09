@@ -295,15 +295,11 @@ Note that there is a third step, namely predicting the characteristics of an act
 We use the `goldfish` package to estimate models for predicting interactions or tie creation/dissolution.
 
 ```{r installGoldfish, eval=FALSE, echo=TRUE}
-# COPY THESE COMMANDS TO THE RStudio CONSOLE AND RUN THEM THERE. 
+# COPY THIS COMMAND TO THE RStudio CONSOLE AND RUN IT THERE. 
 
 # If you haven't installed the goldfish package yet, use the below command to
 # install it from github.
 remotes::install_github("snlab-ch/goldfish")
-
-# In addition, load the NikitaRocks package in the RStudio console with the
-# below command (this makes available data sets that we need).
-library(NikitaRocks)
 ```
 
 <div class="question">
@@ -320,8 +316,6 @@ library(goldfish)
 
 2. Run the above code. This should display info on the package (perhaps in a new browser window).
 </div>
-
-For installation problems (particularly on Mac OSX), consult https://github.com/snlab-ch/goldfish (https://github.com/snlab-ch/goldfish#installing-openmp-on-mac-osx).
 
 ## Build-in types of predictors
 

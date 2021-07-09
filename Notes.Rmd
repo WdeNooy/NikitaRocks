@@ -227,6 +227,15 @@ Hands-on:
 
 ### Morning II, Part II - Network change: Predicting ties (sender and/or recipient)
 
+The `goldfish::estimate()` function does not find data files created within a `learnr` tutorial session. It can only find the data set in a loaded package and the tutorial must be started from the console.
+
+!!!!!!!
+
+1. Load package NikitaRocks: `library(NikitaRocks)`
+2. Start tutorial for Session 6 from RStudio console: `learnr::run_tutorial("Session6", package = "NikitaRocks")`
+
+!!!!!!!
+
 Previous Session: Hypothesize behaviour of sender towards recipient (of the relational event/action) __given that sender acts towards recipient__.
 
 Introduction to:
