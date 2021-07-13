@@ -249,7 +249,7 @@ A one unit increase in ADHD scores predicts that voice loudness increases by `r 
 
 Is this a lot? 
 
-* The maximum adhd difference is around 6: if we compare a pupil with ADHD score 6 to another pupil who scores 0;
+* The maximum ADHD difference is around 6: if we compare a pupil with ADHD score 6 to another pupil who scores 0;
 * maximum difference in predicted voice loudness is around 6 times `r predictor_adhd[2] - predictor_adhd[1]` = `r 6 * (predictor_adhd[2] - predictor_adhd[1])`;
 * this is about one quarter of the loudness scale (from 0 to 1);
 * is this a lot?
@@ -301,7 +301,7 @@ If you run this code, you get a lot of numbers.
 * What was the meaning of this number?
 
 <div class="question">
-Excercises
+Exercises
 
 1. Change the code to estimate the effect of sex on voice loudness. Interpret the coefficient of sex.
 2. Change the code to estimate the effect of both sex and ADHD score on voice loudness. Tip: Literally add a second predictor using the `+` sign.
@@ -635,7 +635,7 @@ Note: If a pupil does not have a playmate or conversation partner, playmate or c
 <div class="question">
 Exercises
 
-1. Use the data set *loudness_events* to estimate a regression model predicting pupils' loudness (variable `loudness`) from the loudest voice at the moment a pupil starts an utterance (variable `expo_last_max`), pupil's sex (variable `sex`) and adhd score (variable `adhd`). Interpret the confidence interval of the exposure effect.
+1. Use the data set *loudness_events* to estimate a regression model predicting pupils' loudness (variable `loudness`) from the loudest voice at the moment a pupil starts an utterance (variable `expo_last_max`), pupil's sex (variable `sex`) and ADHD score (variable `adhd`). Interpret the confidence interval of the exposure effect.
 
 ```{r exposure1, exercise = TRUE}
 # Estimate the model: Enter the variables and data set!
@@ -651,7 +651,7 @@ confint(exposure_model1)
 
 ```
 
-3. Estimate a regression model predicting pupils' loudness (variable `loudness`) from the exposure to voices in the preceding minute separated by type of relation: voices of current playmates (variable: `expo_minute_max_playmate`), current conversation partners (variable: `expo_minute_max_conversation`), and other pupils (variable: `expo_minute_max_other`). Also include pupil's sex and adhd score. Interpret the confidence intervals of the three exposure effects. Which effect is most convincing?
+3. Estimate a regression model predicting pupils' loudness (variable `loudness`) from the exposure to voices in the preceding minute separated by type of relation: voices of current playmates (variable: `expo_minute_max_playmate`), current conversation partners (variable: `expo_minute_max_conversation`), and other pupils (variable: `expo_minute_max_other`). Also include pupil's sex and ADHD score. Interpret the confidence intervals of the three exposure effects. Which effect is most convincing?
 
 ```{r exposure3, exercise = TRUE, exercise.lines = 5}
 # Copy & paste previous code and change what is necessary.
@@ -689,7 +689,7 @@ With events within networks, we usually have four data sets:
 
 1. A data set with characteristics of the network nodes (here: pupils) that do not change, such as sex and ADHD level. In our case, this data set is called `pupils_const`. It contains one row for each pupil.
 
-2. A data set with characteristics of the network nodes (here: pupils) that may change, such as voice loudness. In our case, this data set is called `pupils_dyn`. It contains one row for each time that an event happens for a pupil, for example, one row for each time pupils raise their voices. It also contains the timing of the event: onset (`start`) and end (`terminus`).
+2. A data set with characteristics of the network nodes (here: pupils) that may change, such as voice loudness. In our case, this data set is called `pupils_dyn`. It contains one row for each time that an event happens for a pupil, for example, one row for each time pupils raise their voices. It also contains the timing of the event: start (`onset`) and end (`terminus`).
 
 3. A data set with characteristics of the network links (here: links between pairs of pupils) that do not change, such as friendship ties. In our case, this data set is called `pairs_const`. It contains one row for each pair of pupils, with the sender of the tie (`from`) and the receiver (`to`). In our data, friendship is a symmetrical relation, so if A is friend with B, there is both a row with A as sender and B as receiver and a row with B as sender and A receiver.
 
@@ -706,16 +706,17 @@ str(pupils_const)
 ```
 
 ```{r basicdata2, exercise = TRUE, exercise.eval = TRUE}
-# View the first few lines of data with print() or head().
-head(pupils_const)
+# View the data.
+pupils_const
 ```
+
+2. Change the below code to inspect the other three data sets.
 
 ```{r basicdata3, exercise = TRUE}
 # If you want to see a description of the data, use the help function.
+# The Help information may show up in a new (browser) window.
 ?pupils_const
 ```
-
-2. Change the above code to inspect the other three data sets.
 </div>
 
 ### Calculating exposure variables
@@ -886,7 +887,7 @@ rm(utterances, addressing_help, playmates_help, cases_help)
 
 So far, I have not encountered an R package that visualizes a network of events such that every change in the network is reflected.
 
-As a consequence, I have created the animated visualization the hard way, creating a snapshot of the entwork at every moment an event starts. The animation is just the sequence of these snapshots. 
+As a consequence, I have created the animated visualization the hard way, creating a snapshot of the network at every moment an event starts. The animation is just the sequence of these snapshots. 
 
 If you want to know how, inspect the code below.
 
@@ -899,8 +900,7 @@ library(igraph) #for network visualization
 library(ggraph) #for network visualization
 library(RColorBrewer) #for colour palettes
 
-# Load the data sets as provided to the user.
-load("data-raw/basicdata.RData")
+# Assumes that the basic data sets have been loaded.
 
 # Standard colors to use
 brewercolors <- brewer.pal( 5, name =  "Spectral")
@@ -1083,7 +1083,7 @@ for (t in 1:nrow(timepoints)) {
     theme_void()
 
   #save plot to png file for quick rendering
-  ggsave(paste0("inst/tutorials/Session1/images/breakdyn", t, ".png"),
+  ggsave(paste0("breakdyn", t, ".png"),
          device = "png", width = 18, height = 12, units = "cm", dpi = 200)
 
 }

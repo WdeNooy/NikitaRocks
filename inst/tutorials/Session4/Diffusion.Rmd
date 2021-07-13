@@ -340,7 +340,7 @@ diffusion_data %>%
 
 This figure shows <i class="question">baseline hazard functions</i>, that is, how hazards change over time (breaks):
 
-* Dark gray lines: hazards that we observe in our data (see previous figure). Small hazards for early adopters (Breaks 1 & 2), large hazards for majority.
+* Dark gray lines: hazards that we observe in our data (see previous figure).
 * Blue curve: Predicted hazards as a quadratic function of time (breaks).
 * Horizontal black line: predicted hazard if time does not play a role.
 
@@ -472,7 +472,7 @@ If your answers are Yes, an event history model may be what you are looking for.
 
 This session only discusses a <i class="question">discrete-time event history model</i>. Here, we have a limited number of time points at which events may happen. In our example, adoption of the game app can only happen between breaks and we do not care (and have no information on) when it exactly happens.
 
-If we have the (more or less) precise time at which an event happens, for example, because server data tell us in which second a person sent a chat message, we need a <i class="question">continuous-time event history model</i>. These models cannot be estimated with logistic regression. They are a bit ore complex but the basic ideas remain the same.
+If we have the (more or less) precise time at which an event happens, for example, because server data tell us in which second a person sent a chat message, we need a <i class="question">continuous-time event history model</i>. These models cannot be estimated with logistic regression. They are a bit more complex but the basic ideas remain the same.
 
 ## Further Reading
 

@@ -67,7 +67,7 @@ model_statement_REM <- NikitaRocks::model_statement_REM
 
 In the preceding sessions, we have tried to predict a characteristic of a tie, namely, whether a statement from one pupil to another was positive or negative. 
 
-we have assumed but not predicted that the ties (statements) exist. In the current session, we try to predict the presence versus absence of ties, more exactly, the events that ties appear (or disappear). Can we predict that a pupil says something to another pupil or starts playing with another pupil at a particular moment?
+We have assumed but not predicted that the ties (statements) exist. In the current session, we try to predict the presence versus absence of ties, more exactly, the events that ties appear (or disappear). Can we predict that a pupil says something to another pupil or starts playing with another pupil at a particular moment?
 
 Basically, we are addressing network change: Can we predict how the structure of a network changes?
 
@@ -319,7 +319,7 @@ library(goldfish)
 
 ## Build-in types of predictors
 
-The `goldfish` package automatically creates the predictors for sender, receiver, (dis)similarity, other tie, same tie, and local network context effects that you chose. That saves us a lot of work!
+The `goldfish` package has functions that create predictor variables for sender, receiver, (dis)similarity, other tie, same tie, and local network context effects. That saves us a lot of work!
 
 Available effects:
 
@@ -349,7 +349,7 @@ Other relation: | tie(network, weighted = FALSE, window = Inf, ignoreRep = FALSE
 <div class="question">
 Exercises
 
-1. Which effects did we already encounter in Session 5?
+1. Why do some effects require a network and others only an attribute?
 
 2. Based on your knowledge of the world, do you expect that popularity (indegree) plays a role in predicting how often pupils make statements or to whom they make statements? Note that popularity (indegree) can refer to received statements but also to other received events or ties (friendship, current playmates).
 
@@ -438,10 +438,12 @@ Exercises
 
 1. Inspect the code of Step 2. Which effects are estimated and what do the arguments mean?
 
-2. Run the code (may take some time; alternative: only run the summary() function) and inspect the output (in the last output box). Interpret the signs (directions) of the coefficients: What speeds up making statements and what slows it down?
+2. Run the code (may take some time; alternative: only run the `summary()` function) and inspect the output (in the last output box). Interpret the signs (directions) of the coefficients: What speeds up making statements and what slows it down?
 
 3. Estimate some more models, adding/removing effects and changing arguments.
 </div>
+
+### 
 
 ### Interpreting results
 
@@ -466,10 +468,6 @@ We must exponentiate an effect to get the predicted percentage change in the rat
 # For the original rate model:
 print("Predicted percentage change in the rate:")
 exp(coef(model_statement_rate))
-# If we take the inverse of the exponentiated effects, we get the predicted
-# percentage change in the waiting time between statements (for a 1 unit
-# increase in the predictor).
-1 / exp(coef(model_statement_rate))
 ```
 
 If we take the inverse of the exponentiated effects, we get the predicted percentage change in the waiting time between statements (for a 1 unit increase in the predictor).
@@ -529,10 +527,12 @@ Exercises
 
 1. Inspect the code of Step 2. Which effects are estimated and what do the arguments mean?
 
-2. Run the code (may take some time; alternative: only run the summary() function) and inspect the output (in the last output box). Interpret the signs (directions) of the coefficients: What increases the probability that a pupil is selected as statement target, what decreases it?
+2. Run the code (may take some time; alternative: only run the `summary()` function) and inspect the output (in the last output box). Interpret the signs (directions) of the coefficients: What increases the probability that a pupil is selected as statement target, what decreases it?
 
 3. Estimate some more models, adding/removing effects and changing arguments.
 </div>
+
+### 
 
 ### Interpreting results
 
@@ -553,7 +553,7 @@ The resulting value tells how much more likely pupils are the statement target i
 exp(coef(model_statement_choice))
 ```
 
-For example, pupils who are one unit more similar to the speaker (sender) are around `r round(exp(model_statement_choice$parameters[[1]]))` more likely to be selected as target (if they are not playmate of the speaker and did not make statements to the speaker in the preceding 3 minutes).
+For example, pupils who are one unit more similar to the speaker (sender) are around `r round(exp(model_statement_choice$parameters[[1]]))` more likely to be selected as target (if they are not a playmate of the speaker and did not make statements to the speaker in the preceding 3 minutes).
 
 This looks like an incredibly large effect. Unfortunately, we do not know the scale of the similarity variable. Perhaps one unit represents an unrealistically huge change in the similarity score.
 
@@ -569,7 +569,7 @@ Relational Events Modes (REMs) offer an alternative (and precursor) to the separ
 
 A REM evaluates all possible arrows that may appear at a time point. It predicts which of these is most likely to appear given the state of the network: previous arrows (for example, statements), other relations (for example, friendship, playmates), speaker and target characteristics, and (dis)similarities between these.
 
-As a consequence, we can use all types of effects from the `goldfish` package. For effects that may address the sender and receiver, we must use the `type = "ego"` or `type = "alter"` argument to clarify which of the two we mean:
+As a consequence, we can use all types of effects from the `goldfish` package. For effects that may address either the sender or receiver, we must use the `type = "ego"` or `type = "alter"` argument to clarify which of the two we mean:
 
 * popularity (indegree): `indeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE, type = c("alter", "ego"))`;
 * activity (outdegree): `outdeg(network, isTwoMode = FALSE, weighted = FALSE, window = Inf, ignoreRep = FALSE, type = c("alter", "ego"))`;
@@ -598,8 +598,8 @@ summary(model_statement_REM)
 <div class="question">
 Exercises
 
-1. A DyNAM model uses reciprocity to model only the statement target, not the speaker. In contrast, a REM uses reciprocity both to select the speaker and target. Which model is intuitively more plausible to you?
-2. Run the code (if your computer is not too slow; alternative: only run the summary() function) and interpret the sign of the coefficients as increasing or decreasing the probability of a statement.
+1. A DyNAM model uses reciprocity to model only the statement target, not the speaker. In contrast, a REM may use reciprocity both to select the speaker and target (because it selects the arrow). Which model is intuitively more plausible to you?
+2. Run the code (if your computer is not too slow; alternative: only run the `summary()` function) and interpret the sign of the coefficients as increasing or decreasing the probability of a statement.
 </div>
 
 ## Playmate coordination
@@ -642,7 +642,7 @@ Exercises
 
 1. Inspect the code of Step 2. Which effects are estimated and what do the arguments mean?
 
-2. Run the code (may take some time; alternative: only run the summary() function) and inspect the output (in the last output box). Interpret the signs (directions) of the coefficients: What increases the probability that two pupils tart playing together, what decreases the probability?
+2. Run the code (may take some time; alternative: only run the `summary()` function) and inspect the output (in the last output box). Interpret the signs (directions) of the coefficients: What increases the probability that two pupils start playing together, what decreases the probability?
 
 3. Estimate some more models, adding/removing effects and changing arguments.
 </div>
@@ -655,7 +655,7 @@ If the data is collected in panel waves, similar types of models can be estimate
 
 `RSiena` uses the same logic and types of predictors as the DyNAM rate and choice models. It treats the events of tie or interaction starts and endings in between panel waves as missing data. The missing data are guessed by simulating the process of events in between panel waves.
 
-Because of the guessing, `RSiena` requires that the ties do not change too much between subsequent panel waves. A substantial proportion of ties that exist in the a panel wave must still exist in the next. 
+Because of the guessing, `RSiena` requires that the ties do not change too much between subsequent panel waves. A substantial proportion of ties that exist in a panel wave must still exist in the next. 
 
 If the ties for which we want to predict change are durable in comparison to the time span between measurement waves, you can analyze the typs of effects learned here with the `RSiena` package.
 

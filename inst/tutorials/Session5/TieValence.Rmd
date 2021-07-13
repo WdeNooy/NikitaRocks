@@ -168,9 +168,9 @@ It shows the statement within its network context:
 
 ###
 
-### The pair as observation and tie negativity as dependent/outcome variable.
+### The pair as observation
 
-In this session, we will use the data frame `utterances` in our analyses. Have a look at the part of this data set that represents the utterances depicted in the previous figure (pupil IDs are replaced by their first names).
+In this session, we will use the data frame `utterances` in our analyses. Have a look at the part of this data set that represents the utterances depicted in the previous figure (pupil IDs are replaced by their first names; onset and terminus times in minutes and seconds).
 
 ```{r datafragment1}
 # excerpt of data frame to snapshot (sorted chronologically.
@@ -182,7 +182,16 @@ utterances %>%
     ) %>% 
   #add pupil names
   left_join(pupils_const[,c("ID", "label")], by = c("from" = "ID")) %>%
-  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>% 
+  left_join(pupils_const[,c("ID", "label")], by = c("to" = "ID")) %>%
+  #change onset and temrinus into time character strings
+  mutate(
+    onset = paste0(format(round(onset), width = 2), ":",
+                   formatC(round(60 * (onset %% 1)),
+                           flag = "0", width=2)),
+    terminus = paste0(format(round(terminus), width = 2), ":",
+                   formatC(round(60 * (terminus %% 1)),
+                           flag = "0", width=2))
+  ) %>%
   #select relevant variables (exclude predictors)
   select(from = label.x, to = label.y, breakID:negative) %>%
   #sort chronologically (descending)
@@ -297,18 +306,20 @@ utterances %>%
 <div class="question">
 Exercises
 
-1. Which of the types of independent/predictor variables do you recognize in the above data? Tip: Use the little black triangle to see more variables.
+1. Which of the types of independent/predictor variables do you recognize in the above data? Tips: Use the little black triangle to see more variables and read the description of the variables (may open in new browser window).
 
-2. Which ones are missing?
+```{r datadescription, exercise = TRUE}
+?utterances
+```
 
-3. Can you figure out how the variable `simil_sex` was constructed?
+2. Can you figure out how the variable `simil_sex` was constructed?
 </div>
 
 ### Independent/predictor variables from pupil characteristics and other ties
 
 It is relatively straightforward to construct independent variables for sender, receiver, and (dis)similarity effects: Just add the characteristics for sender and receiver or the difference.
 
-Predictors for effects of other relations (friendship, playmate) just include the Yes(1)/No(0) variable used to register friendships and playmates in the basic data sets for pairwise (= lines) information: `pairs_const` and `pairs_dyn`.
+Predictors for effects of other relations (friendship, playmate) include the Yes(1)/No(0) variable used to register friendships and playmates in the basic data sets for pairwise (= lines) information: `pairs_const` and `pairs_dyn`.
 
 ```{r basicdatacheck, exercise = TRUE}
 # Just issue the name of a data set to show its contents.
@@ -422,7 +433,7 @@ A balance predictor variable counts the number of two-step ties between Actor an
 
 As with the reciprocity predictor variable, we can count all ties or only the last ties, and weigh or not weigh ties.
 
-In the data set hat we will use (`utterances`), only the last statement between each pair of pupils in the last 5 minutes (before the new statement) has been used to calculate two balance predictor variables:
+In the data set that we will use (`utterances`), only the last statement between each pair of pupils in the last 5 minutes (before the new statement) has been used to calculate two balance predictor variables:
 
 * `balance_neg`: the number of two-step ties with a negative product of signs;
 * `balance_pos`: the number of two-step ties with a positive product of signs.
@@ -531,11 +542,11 @@ model1 <- glm(
 predict(
   model1, #the stored logistic regression results
   data.frame( #enter the variables and values for which you want predictions:
-    sex_from = c(0, 0), #zero for boys, one for girls
-    adhd_to = c(1.13, 1.13), #both the addressed boy and girl have avergae ADHD level...
+    sex_from = c(0, 1), #zero for boys, one for girls
+    adhd_to = c(1.13, 1.13), #both the addressed boy and girl have average ADHD level...
     simil_ethn = c(1, 1), #speaker and addressee have the same ethnicity
     friend = c(0, 0), #but they are not friends
-    received_neg = c(0, 1), #the speaker did not receive previous negative statements from the addressee
+    received_neg = c(0, 0), #the speaker did not receive previous negative statements from the addressee
     balance_neg = c(0, 0) #and their are no negative two-step ties between them
   ),
   type = "response" #gives probabilities not log odds
@@ -583,7 +594,7 @@ In addition, we also have repeated observations for a pupil receiving a statemen
 
 A model with random (varying) effects for the pupil sending and the pupil receiving a statement is an example of a <i class="question">cross-nested multilevel model</i>.
 
-```{r logistic2, exercise = TRUE}
+```{r logistic2, exercise = TRUE, exercise.timelimit = 180}
 # Ensure that the lme4 package is loaded.
 library(lme4)
 # Estimate (the probability of) statement negativity.
@@ -594,14 +605,69 @@ model2 <- glmer(
 )
 # Summarise results.
 summary(model2)
-# Confidence intervals.
-confint(model2)
 ```
 
 <div class="question">
 Exercise
 
 1. Run the code and compare the _p_ values (`Pr(>|z|)`) of the fixed effects to those estimated before without multilevel model.
+</div>
+
+### 
+
+The random (varying) intercepts for the sender of the statement (`from`) represent pupils' personal tendencies to make negative rather than positive statements.
+
+The random (varying) intercepts for the receiver of the statement (`to`) represent pupils' personal tendencies to be the target of negative rather than positive statements.
+
+```{r multilevelplot2, exercise = TRUE, exercise.eval = TRUE}
+# Estimate the cross-nested multilevel model.
+model2 <- glmer(
+  negative ~ sex_from + adhd_to + simil_ethn + friend + received_neg + balance_neg + (1 | from) + (1 | to),
+  data = utterances,
+  family = binomial(link = "logit")
+)
+# Use the estimated random effects to create a plot.
+# Helper file: random intercepts for sender (from)
+from <- ranef(model2, drop = TRUE)$from %>% as_tibble(rownames = "ID")
+# Helper file: random intercepts for receiver (to)
+to <- ranef(model2, drop = TRUE)$to %>% as_tibble(rownames = "ID")
+# Combine files and create plot.
+from %>%
+  #add receiver intercepts
+  full_join(to, by = "ID") %>%
+  mutate(ID = as.integer(ID)) %>%
+  #add pupil names (and other info) from data set pupils_const
+  left_join(pupils_const, by = "ID") %>%
+  #feed the data to the plot
+  ggplot() +
+    #adding a horizontal line at zero
+  geom_hline(yintercept = 0, colour = "blue") +
+    #abusing the errorbar a bit (not showing error intervals now)
+    #add black line segments for varying sender intercepts
+    #with pupil labels (on X axis) ordered by exposure effect
+    geom_errorbar(aes(x = reorder(label, value.x), ymin = value.x, ymax = value.x)) +
+    #add red line segments for varying exposure effects
+    geom_errorbar(aes(x = reorder(label, value.y), ymin = value.y, ymax = value.y), colour = "Red") +
+    #changing the labels of the axes
+    labs(x = "", 
+         y = "Estimates",
+         title = "Varying intercepts for senders (black) and receivers (red)"
+         ) +
+    #setting the overall appearance of the figure
+    theme_bw() +
+    #setting pupil names at an angle for readability  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+#Cleanup
+rm(model2, from, to)
+```
+
+<div class="question">
+Exercises
+
+1. Which pupils are most likely to make negative statements, which ones are least likely?
+
+2. Which pupils are most likely to attract negative statements, which ones are least likely?
 </div>
 
 ### 

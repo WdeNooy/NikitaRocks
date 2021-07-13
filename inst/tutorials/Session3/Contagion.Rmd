@@ -155,7 +155,7 @@ diffusion_data %>%
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 #Cleanup.
-rm(friends_matrix, adoptions, friends_lines, permutation)
+rm(adoptions, friends_lines, permutation)
 ```
 
 This figure summarizes our diffusion data:
@@ -372,7 +372,7 @@ Logistic regression is like ordinary regression except that:
 
 - Centola, D. (2018). _How Behavior Spreads: The Science of Complex Contagions_. Princeton University Press. Presents an influential perspective on (analyzing) contagion through networks.
 
-- - Miles, J., & Shevlin, M. (2001). _Applying regression & correlation: A guide for students and researchers_. SAGE. Also contains a chapter offering an introduction to logistic regression.
+- Miles, J., & Shevlin, M. (2001). _Applying regression & correlation: A guide for students and researchers_. SAGE. Also contains a chapter offering an introduction to logistic regression.
 
 - For thorough understanding of logistic regression, study: Hosmer, D. W., Lemeshow, S., & Sturdivant, R. X. (2013). _Applied Logistic Regression_ (3rd ed. or later). Wiley.
 
