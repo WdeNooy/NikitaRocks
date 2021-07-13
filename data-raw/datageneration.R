@@ -2269,6 +2269,7 @@ save(utterances, file = "data/utterances.RData")
 
 # Create the data sets for predicting statements and playmate ties with the
 # goldfish package.
+library(goldfish)
 
 # Step 1: The node set and time-constant node characteristics or starting values for time-varying node characteristics.
 # - Nodes are identified by textual labels (required).
@@ -2429,7 +2430,7 @@ model_statement_rate <- estimate(
 model_statement_choice <- estimate(
   events_dependent ~ #do not use an intercept in a choice model!
     sim(nodes_pupils$adhd) +
-    tie(net_playmates, weighted = FALSE, window = 1, ignoreRep = TRUE) +
+    tie(net_playmates, weighted = FALSE, ignoreRep = TRUE) +
     recip(net_statements, weighted = TRUE, window = 3, ignoreRep = FALSE),
   model = "DyNAM", subModel = "choice" #select the choice submodel
 )
