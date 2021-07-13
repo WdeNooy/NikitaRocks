@@ -1,7 +1,7 @@
 Package: NikitaRocks
 Type: Package
 Title: Tutorials on Statistical Models for Events Within Networks
-Version: 0.1.1
+Version: 0.1.2
 Author: Wouter de Nooy
 Maintainer: Wouter de Nooy <w.denooy@uva.nl>
 Description: Six tutorials on regression models for analyzing events within networks (longitudina data): peer influence, susceptibility, contagion, diffusion, tie valence, and tie creation.
